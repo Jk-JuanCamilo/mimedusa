@@ -67,9 +67,8 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
     };
 
     const drawCircuit = () => {
-      ctx.fillStyle = "rgba(10, 5, 20, 0.1)";
+      ctx.fillStyle = "rgba(5, 10, 25, 0.1)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       const nodes = nodesRef.current;
       const time = timeRef.current;
 
@@ -88,9 +87,9 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
           const gradient = ctx.createLinearGradient(node.x, node.y, other.x, other.y);
           const pulsePos = (Math.sin(time * 0.002 + node.pulsePhase) + 1) / 2;
           
-          gradient.addColorStop(0, `hsla(280, 100%, 65%, ${opacity * 0.3})`);
-          gradient.addColorStop(pulsePos, `hsla(300, 80%, 60%, ${opacity})`);
-          gradient.addColorStop(1, `hsla(280, 100%, 65%, ${opacity * 0.3})`);
+          gradient.addColorStop(0, `hsla(190, 100%, 50%, ${opacity * 0.3})`);
+          gradient.addColorStop(pulsePos, `hsla(180, 100%, 60%, ${opacity})`);
+          gradient.addColorStop(1, `hsla(190, 100%, 50%, ${opacity * 0.3})`);
 
           ctx.beginPath();
           ctx.strokeStyle = gradient;
@@ -124,8 +123,8 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
           node.x, node.y, 0,
           node.x, node.y, size * 4
         );
-        glowGradient.addColorStop(0, `hsla(280, 100%, 65%, ${0.8 * pulse})`);
-        glowGradient.addColorStop(0.5, `hsla(300, 80%, 60%, ${0.3 * pulse})`);
+        glowGradient.addColorStop(0, `hsla(190, 100%, 60%, ${0.8 * pulse})`);
+        glowGradient.addColorStop(0.5, `hsla(180, 100%, 50%, ${0.3 * pulse})`);
         glowGradient.addColorStop(1, "transparent");
         
         ctx.beginPath();
@@ -135,7 +134,7 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
 
         // Core
         ctx.beginPath();
-        ctx.fillStyle = `hsla(280, 100%, 70%, ${0.6 + pulse * 0.4})`;
+        ctx.fillStyle = `hsla(180, 100%, 70%, ${0.6 + pulse * 0.4})`;
         ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
         ctx.fill();
 
@@ -166,7 +165,7 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
           const py = node.y + (other.y - node.y) * pulseT;
 
           ctx.beginPath();
-          ctx.fillStyle = `hsla(300, 100%, 70%, ${0.8})`;
+          ctx.fillStyle = `hsla(180, 100%, 70%, 0.8)`;
           ctx.arc(px, py, 1.5, 0, Math.PI * 2);
           ctx.fill();
         });
@@ -180,7 +179,7 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
     window.addEventListener("resize", resize);
     
     // Initial fill
-    ctx.fillStyle = "rgb(10, 5, 20)";
+    ctx.fillStyle = "rgb(5, 10, 25)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     drawCircuit();
@@ -197,7 +196,7 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
     <canvas
       ref={canvasRef}
       className={`fixed inset-0 -z-10 ${className || ""}`}
-      style={{ background: "rgb(10, 5, 20)" }}
+      style={{ background: "rgb(5, 10, 25)" }}
     />
   );
 }
