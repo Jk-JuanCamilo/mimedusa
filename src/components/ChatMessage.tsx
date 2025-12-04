@@ -12,10 +12,10 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 p-4 rounded-lg transition-all",
+        "flex gap-3 p-4 rounded-lg transition-all backdrop-blur-sm",
         isUser 
-          ? "bg-secondary/50 ml-8" 
-          : "bg-card mr-8 border border-border"
+          ? "bg-secondary/40 ml-8 border border-border/30" 
+          : "bg-card/60 mr-8 border border-border/50"
       )}
     >
       <div
