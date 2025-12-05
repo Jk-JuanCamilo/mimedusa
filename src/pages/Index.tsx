@@ -5,6 +5,7 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { MedussaLogo } from "@/components/MedussaLogo";
 import { CircuitBackground } from "@/components/CircuitBackground";
+import { FloatingJellyfish } from "@/components/FloatingJellyfish";
 import { useChat } from "@/hooks/useChat";
 import { Trash2 } from "lucide-react";
 
@@ -27,6 +28,9 @@ const Index = () => {
     <div className="flex flex-col h-screen relative">
       {/* Animated Circuit Background */}
       <CircuitBackground />
+      
+      {/* Floating Jellyfish */}
+      <FloatingJellyfish />
       
       {/* Content overlay */}
       <div className="flex flex-col h-full relative z-10">
