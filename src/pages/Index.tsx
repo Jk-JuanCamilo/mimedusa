@@ -46,10 +46,7 @@ const Index = () => {
           {messages.length === 0 ? <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center px-4">
               <MedussaLogo size="lg" className="mb-6" />
               <h2 className="text-2xl font-bold text-gradient mb-2">Medussa IA</h2>
-              <p className="text-muted-foreground max-w-md mb-8">
-                Soy una inteligencia artificial avanzada lista para ayudarte con cualquier pregunta. 
-                Mi conocimiento es extenso y mis respuestas son directas.
-              </p>
+              <p className="text-muted-foreground max-w-md mb-8">Soy una inteligencia artificial avanzada lista para ayudarte con cualquier pregunta. Mi conocimiento es extenso</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg w-full">
                 {["¿Cuál es la diferencia entre IA y Machine Learning?", "¿Cómo puedo aprender a programar?"].map(suggestion => <button key={suggestion} onClick={() => sendMessage(suggestion)} disabled={isLoading} className="p-3 text-sm text-left rounded-lg border border-border/50 bg-card/40 backdrop-blur-sm hover:bg-card/60 hover:border-primary/50 transition-all text-muted-foreground hover:text-foreground">
                     {suggestion}
