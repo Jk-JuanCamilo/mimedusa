@@ -51,7 +51,7 @@ const Index = () => {
                 Mi conocimiento es extenso y mis respuestas son directas.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg w-full">
-                {["¿Cuál es la diferencia entre IA y Machine Learning?", "Explícame la teoría de la relatividad", "¿Cómo puedo aprender a programar?", "Dame consejos para mejorar mi productividad"].map(suggestion => <button key={suggestion} onClick={() => sendMessage(suggestion)} disabled={isLoading} className="p-3 text-sm text-left rounded-lg border border-border/50 bg-card/40 backdrop-blur-sm hover:bg-card/60 hover:border-primary/50 transition-all text-muted-foreground hover:text-foreground">
+                {["¿Cuál es la diferencia entre IA y Machine Learning?", "¿Cómo puedo aprender a programar?"].map(suggestion => <button key={suggestion} onClick={() => sendMessage(suggestion)} disabled={isLoading} className="p-3 text-sm text-left rounded-lg border border-border/50 bg-card/40 backdrop-blur-sm hover:bg-card/60 hover:border-primary/50 transition-all text-muted-foreground hover:text-foreground">
                     {suggestion}
                   </button>)}
               </div>
