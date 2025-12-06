@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ImagePlus, Globe, Code, Sparkles } from "lucide-react";
+import { ImagePlus, Globe, Code, User } from "lucide-react";
 
 interface ActionButtonsProps {
   onAction: (action: string) => void;
@@ -7,6 +7,12 @@ interface ActionButtonsProps {
 }
 
 const actions = [
+  {
+    id: "name",
+    label: "Mi Nombre",
+    icon: User,
+    prompt: "Hola, mi nombre es "
+  },
   {
     id: "image",
     label: "Generar Imagen",
