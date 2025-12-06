@@ -4,18 +4,66 @@ import { toast } from "sonner";
 export interface Message {
   role: "user" | "assistant";
   content: string;
+  imageUrl?: string;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("google/gemini-2.5-flash");
 
-  const sendMessage = useCallback(async (input: string) => {
+  const sendMessage = useCallback(async (input: string, model?: string) => {
     const userMsg: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+
+    // Check if user wants to generate an image
+    const isImageRequest = input.toLowerCase().includes("genera una imagen") || 
+                          input.toLowerCase().includes("generar imagen") ||
+                          input.toLowerCase().includes("crea una imagen") ||
+                          input.toLowerCase().includes("crear imagen") ||
+                          input.toLowerCase().includes("dibuja") ||
+                          input.toLowerCase().includes("generate image") ||
+                          input.toLowerCase().includes("create image");
+
+    if (isImageRequest) {
+      try {
+        const resp = await fetch(IMAGE_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ prompt: input }),
+        });
+
+        if (!resp.ok) {
+          const errorData = await resp.json().catch(() => ({}));
+          toast.error(errorData.error || "Error al generar la imagen");
+          setMessages(prev => prev.slice(0, -1));
+          setIsLoading(false);
+          return;
+        }
+
+        const data = await resp.json();
+        setMessages(prev => [...prev, { 
+          role: "assistant", 
+          content: data.text || "¡Aquí está tu imagen generada!",
+          imageUrl: data.imageUrl
+        }]);
+        setIsLoading(false);
+        return;
+      } catch (error) {
+        console.error("Image generation error:", error);
+        toast.error("Error al generar la imagen");
+        setMessages(prev => prev.slice(0, -1));
+        setIsLoading(false);
+        return;
+      }
+    }
 
     let assistantContent = "";
 
@@ -39,7 +87,10 @@ export function useChat() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
+        body: JSON.stringify({ 
+          messages: [...messages, userMsg],
+          model: model || selectedModel
+        }),
       });
 
       if (!resp.ok) {
@@ -116,11 +167,11 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages]);
+  }, [messages, selectedModel]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
   }, []);
 
-  return { messages, isLoading, sendMessage, clearChat };
+  return { messages, isLoading, sendMessage, clearChat, selectedModel, setSelectedModel };
 }
