@@ -4,9 +4,10 @@ import { Bot, User } from "lucide-react";
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
+  imageUrl?: string;
 }
 
-export function ChatMessage({ role, content }: ChatMessageProps) {
+export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
   const isUser = role === "user";
 
   return (
@@ -38,6 +39,16 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
           {content}
         </div>
+        {imageUrl && (
+          <div className="mt-3">
+            <img 
+              src={imageUrl} 
+              alt="Imagen generada por IA"
+              className="max-w-full rounded-lg border border-border/50 shadow-lg"
+              style={{ maxHeight: '400px' }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

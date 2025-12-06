@@ -14,7 +14,9 @@ const Index = () => {
     messages,
     isLoading,
     sendMessage,
-    clearChat
+    clearChat,
+    selectedModel,
+    setSelectedModel
   } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   
@@ -85,7 +87,12 @@ const Index = () => {
         {/* Input area */}
         <div className="p-4 border-t border-border/50 bg-background/60 backdrop-blur-md">
           <div className="max-w-3xl mx-auto">
-            <ChatInput onSend={sendMessage} isLoading={isLoading} />
+            <ChatInput 
+              onSend={sendMessage} 
+              isLoading={isLoading}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+            />
           </div>
         </div>
       </div>
