@@ -54,42 +54,73 @@ export function ActionButtons({ onAction, disabled }: ActionButtonsProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 20 * 1024 * 1024; // 20MB
     if (file.size > maxSize) {
-      toast.error("El archivo es muy grande. Máximo 10MB.");
+      toast.error("El archivo es muy grande. Máximo 20MB.");
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      const extension = file.name.split('.').pop()?.toLowerCase();
+      const extension = file.name.split('.').pop()?.toLowerCase() || '';
       let content = "";
+      let fileType = "texto";
 
-      if (['txt', 'csv', 'json', 'xml', 'html', 'css', 'js', 'ts', 'md'].includes(extension || '')) {
-        // Read as text for plain text files
+      // Text-based files that can be read directly
+      const textFormats = ['txt', 'csv', 'json', 'xml', 'html', 'css', 'js', 'ts', 'tsx', 'jsx', 'md', 'py', 'java', 'c', 'cpp', 'h', 'sql', 'yaml', 'yml', 'ini', 'cfg', 'log', 'sh', 'bat', 'ps1', 'rb', 'php', 'go', 'rs', 'swift', 'kt', 'scala', 'r', 'lua', 'pl', 'vue', 'svelte', 'astro'];
+      
+      if (textFormats.includes(extension)) {
         content = await file.text();
-      } else if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension || '')) {
-        // For binary files, read as base64
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        content = `[Archivo: ${file.name}]\nTipo: ${file.type}\nTamaño: ${(file.size / 1024).toFixed(2)} KB\n\nNota: Este es un archivo binario (${extension}). Por favor describe qué te gustaría que haga con este archivo.`;
+        fileType = extension.toUpperCase();
       } else {
-        // Other files
-        content = await file.text().catch(() => 
-          `[Archivo: ${file.name}] - Tipo: ${file.type || 'desconocido'}`
-        );
+        // Try to read as text first for unknown formats
+        try {
+          const textContent = await file.text();
+          // Check if it's readable text (not binary garbage)
+          const isBinary = /[\x00-\x08\x0E-\x1F\x7F-\xFF]/.test(textContent.substring(0, 1000));
+          
+          if (!isBinary && textContent.length > 0) {
+            content = textContent;
+            fileType = extension.toUpperCase() || "TEXTO";
+          } else {
+            // Binary file - provide metadata
+            content = `[ARCHIVO BINARIO DETECTADO]
+Nombre: ${file.name}
+Tipo MIME: ${file.type || 'desconocido'}
+Tamaño: ${(file.size / 1024).toFixed(2)} KB
+Extensión: .${extension}
+
+NOTA: Este archivo parece ser binario (${extension}). Puedo ayudarte a:
+- Describir qué tipo de archivo es
+- Sugerir cómo editarlo
+- Crear un nuevo archivo similar
+- Proporcionar instrucciones de edición
+
+Por favor, describe qué cambios necesitas hacer en este archivo.`;
+            fileType = "BINARIO";
+          }
+        } catch {
+          content = `[ARCHIVO: ${file.name}]
+Tipo: ${file.type || 'desconocido'}
+Tamaño: ${(file.size / 1024).toFixed(2)} KB
+
+Por favor describe qué te gustaría hacer con este archivo.`;
+          fileType = "DESCONOCIDO";
+        }
       }
 
-      const truncatedContent = content.length > 5000 
-        ? content.substring(0, 5000) + "\n\n[... contenido truncado por longitud ...]" 
+      // Truncate very long content but keep more for better context
+      const maxLength = 15000;
+      const truncatedContent = content.length > maxLength 
+        ? content.substring(0, maxLength) + `\n\n[... contenido truncado (${content.length} caracteres totales) ...]` 
         : content;
 
-      onAction(`He subido el archivo "${file.name}":\n\n${truncatedContent}\n\n¿Qué te gustaría que haga con este archivo?`);
+      const prompt = fileType === "BINARIO" || fileType === "DESCONOCIDO"
+        ? `He subido el archivo "${file.name}":\n\n${truncatedContent}`
+        : `He subido el archivo "${file.name}" (${fileType}):\n\n\`\`\`${extension}\n${truncatedContent}\n\`\`\`\n\n¿Qué te gustaría que edite o modifique en este archivo?`;
+
+      onAction(prompt);
       toast.success(`Archivo "${file.name}" cargado correctamente`);
     } catch (error) {
       console.error("Error reading file:", error);
@@ -154,7 +185,7 @@ export function ActionButtons({ onAction, disabled }: ActionButtonsProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".txt,.pdf,.doc,.docx,.xls,.xlsx,.csv,.json,.xml,.md,.ppt,.pptx"
+        accept="*/*"
         onChange={handleFileUpload}
         className="hidden"
       />
