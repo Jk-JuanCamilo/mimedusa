@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
-import { Bot, User } from "lucide-react";
+import { Bot, User, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCallback } from "react";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -9,6 +11,58 @@ interface ChatMessageProps {
 
 export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
   const isUser = role === "user";
+
+  // Detectar bloques de código o contenido editable
+  const hasCodeBlock = content.includes("```");
+  const hasEditableContent = content.includes("---CONTENIDO EDITADO---") || 
+                             content.includes("Aquí está el contenido editado") ||
+                             content.includes("archivo editado") ||
+                             content.includes("contenido corregido") ||
+                             hasCodeBlock;
+
+  const handleDownload = useCallback(() => {
+    let downloadContent = content;
+    let filename = "archivo_editado.txt";
+    let mimeType = "text/plain";
+
+    // Extraer contenido del bloque de código si existe
+    const codeBlockMatch = content.match(/```(\w+)?\n?([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      const extension = codeBlockMatch[1] || "txt";
+      downloadContent = codeBlockMatch[2].trim();
+      
+      // Determinar extensión y tipo MIME
+      const extMap: Record<string, { ext: string; mime: string }> = {
+        javascript: { ext: "js", mime: "text/javascript" },
+        js: { ext: "js", mime: "text/javascript" },
+        typescript: { ext: "ts", mime: "text/typescript" },
+        ts: { ext: "ts", mime: "text/typescript" },
+        python: { ext: "py", mime: "text/x-python" },
+        py: { ext: "py", mime: "text/x-python" },
+        html: { ext: "html", mime: "text/html" },
+        css: { ext: "css", mime: "text/css" },
+        json: { ext: "json", mime: "application/json" },
+        xml: { ext: "xml", mime: "application/xml" },
+        csv: { ext: "csv", mime: "text/csv" },
+        sql: { ext: "sql", mime: "text/x-sql" },
+        txt: { ext: "txt", mime: "text/plain" },
+      };
+      
+      const extInfo = extMap[extension.toLowerCase()] || { ext: extension, mime: "text/plain" };
+      filename = `archivo_editado.${extInfo.ext}`;
+      mimeType = extInfo.mime;
+    }
+
+    const blob = new Blob([downloadContent], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [content]);
 
   return (
     <div
@@ -39,6 +93,17 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
           {content}
         </div>
+        {!isUser && hasEditableContent && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDownload}
+            className="mt-2 gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Descargar archivo
+          </Button>
+        )}
         {imageUrl && (
           <div className="mt-3">
             <img 
