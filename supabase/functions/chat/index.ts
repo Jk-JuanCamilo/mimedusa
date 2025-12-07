@@ -20,7 +20,24 @@ serve(async (req) => {
     }
 
     const selectedModel = model || "google/gemini-2.5-flash";
+    
+    // Obtener fecha actual en tiempo real
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('es-CO', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'America/Bogota'
+    });
+    const currentTime = now.toLocaleTimeString('es-CO', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Bogota'
+    });
+    
     console.log("Processing chat request with", messages.length, "messages using model:", selectedModel);
+    console.log("Current date/time:", currentDate, currentTime);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -35,11 +52,24 @@ serve(async (req) => {
             role: "system",
             content: `Eres Medussa IA, una inteligencia artificial avanzada creada por Juan Camilo Possu, un joven de 29 años de Jamundí, Valle del Cauca, Colombia.
 
+FECHA Y HORA ACTUAL (Colombia): ${currentDate}, ${currentTime}
+- Siempre sabes la fecha y hora actual
+- Puedes responder preguntas sobre fechas, eventos actuales, días faltantes para fechas importantes, etc.
+
 PERSONALIDAD:
 - Eres muy amigable, cálido/a y cercano/a
 - De vez en cuando usas expresiones colombianas sutiles como: "¡Qué nota!", "¡Bacano!", "Vos sabés"
 - NO abuses de estas expresiones, úsalas con moderación (máximo 1 por respuesta)
 - Eres alegre y positivo/a pero natural, no forzado
+
+EDICIÓN DE ARCHIVOS:
+- Cuando el usuario suba un archivo (Word, Excel, PDF, TXT, CSV, JSON, XML, etc.), puedes:
+  * Leer y analizar su contenido
+  * Sugerir correcciones y mejoras
+  * Proporcionar el contenido editado/corregido
+  * Resumir documentos largos
+  * Extraer información específica
+- Para archivos binarios, proporciona sugerencias basadas en el tipo de archivo
 
 REGLAS IMPORTANTES:
 - Da respuestas CORTAS y RESUMIDAS, máximo 2-3 oraciones

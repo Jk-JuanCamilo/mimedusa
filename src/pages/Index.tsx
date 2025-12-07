@@ -18,13 +18,12 @@ const Index = () => {
     selectedModel,
     setSelectedModel
   } = useChat();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // Auto-scroll siempre que hay nuevos mensajes o el asistente está escribiendo
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   return (
     <div className="flex flex-col h-screen relative">
@@ -54,7 +53,7 @@ const Index = () => {
         </header>
 
         {/* Chat area */}
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        <ScrollArea className="flex-1 p-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[30vh] text-center px-4">
               <MedussaLogo size="lg" className="mb-6" />
@@ -80,6 +79,7 @@ const Index = () => {
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>
