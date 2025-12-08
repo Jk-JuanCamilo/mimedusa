@@ -1,13 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { MedussaLogo } from "@/components/MedussaLogo";
-import { CircuitBackground } from "@/components/CircuitBackground";
-import { FloatingJellyfish } from "@/components/FloatingJellyfish";
 import { useChat } from "@/hooks/useChat";
 import { Trash2 } from "lucide-react";
+
+// Lazy load non-critical visual components
+const CircuitBackground = lazy(() => import("@/components/CircuitBackground").then(m => ({ default: m.CircuitBackground })));
+const FloatingJellyfish = lazy(() => import("@/components/FloatingJellyfish").then(m => ({ default: m.FloatingJellyfish })));
 
 const Index = () => {
   const {
@@ -27,11 +29,15 @@ const Index = () => {
 
   return (
     <div className="flex flex-col h-screen relative">
-      {/* Animated Circuit Background */}
-      <CircuitBackground />
+      {/* Animated Circuit Background - lazy loaded */}
+      <Suspense fallback={null}>
+        <CircuitBackground />
+      </Suspense>
       
-      {/* Floating Jellyfish */}
-      <FloatingJellyfish />
+      {/* Floating Jellyfish - lazy loaded */}
+      <Suspense fallback={null}>
+        <FloatingJellyfish />
+      </Suspense>
       
       {/* Content overlay */}
       <div className="flex flex-col h-full relative z-10">
