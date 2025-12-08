@@ -5,13 +5,55 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const MAX_PROMPT_LENGTH = 2000; // Max characters for image prompt
+const MIN_PROMPT_LENGTH = 3; // Minimum characters for meaningful prompt
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { prompt } = await req.json();
+    const body = await req.json();
+    
+    // Validate request body structure
+    if (!body || typeof body !== "object") {
+      console.error("Invalid request body");
+      return new Response(JSON.stringify({ error: "Solicitud inválida" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { prompt } = body;
+
+    // Validate prompt exists and is a string
+    if (typeof prompt !== "string") {
+      console.error("Prompt is not a string:", typeof prompt);
+      return new Response(JSON.stringify({ error: "La descripción debe ser texto" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate prompt length
+    const trimmedPrompt = prompt.trim();
+    if (trimmedPrompt.length < MIN_PROMPT_LENGTH) {
+      console.error("Prompt too short:", trimmedPrompt.length);
+      return new Response(JSON.stringify({ error: "La descripción es muy corta. Describe qué imagen quieres." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (trimmedPrompt.length > MAX_PROMPT_LENGTH) {
+      console.error("Prompt too long:", trimmedPrompt.length);
+      return new Response(JSON.stringify({ error: `La descripción es muy larga. Máximo ${MAX_PROMPT_LENGTH} caracteres.` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -20,11 +62,11 @@ serve(async (req) => {
     }
 
     // Enhanced prompt for better image generation
-    const enhancedPrompt = `Generate a high-quality, detailed image based on this description: ${prompt}. 
+    const enhancedPrompt = `Generate a high-quality, detailed image based on this description: ${trimmedPrompt}. 
     Create a visually appealing and creative image that matches the request. 
     Focus on quality, detail, and artistic value.`;
 
-    console.log("Generating image with prompt:", prompt);
+    console.log("Generating image with prompt:", trimmedPrompt.substring(0, 100) + "...");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
