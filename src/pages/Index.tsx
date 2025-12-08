@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { MedussaLogo } from "@/components/MedussaLogo";
+import { AuthButton } from "@/components/AuthButton";
 import { useChat } from "@/hooks/useChat";
 import { Trash2 } from "lucide-react";
 
@@ -50,12 +51,15 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Inteligencia sin límites</p>
             </div>
           </div>
-          {messages.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearChat} className="text-muted-foreground hover:text-destructive">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Limpiar
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {messages.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearChat} className="text-muted-foreground hover:text-destructive">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Limpiar
+              </Button>
+            )}
+            <AuthButton />
+          </div>
         </header>
 
         {/* Chat area */}

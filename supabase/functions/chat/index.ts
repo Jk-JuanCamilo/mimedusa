@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const selectedModel = model || "google/gemini-2.5-flash";
+    const selectedModel = model || "google/gemini-2.5-flash-lite";
     
     // Obtener fecha actual en tiempo real
     const now = new Date();

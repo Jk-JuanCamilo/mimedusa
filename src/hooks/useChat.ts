@@ -13,7 +13,7 @@ const IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-im
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("google/gemini-2.5-flash");
+  const [selectedModel, setSelectedModel] = useState("google/gemini-2.5-flash-lite");
 
   const sendMessage = useCallback(async (input: string, model?: string) => {
     const userMsg: Message = { role: "user", content: input };
@@ -31,6 +31,9 @@ export function useChat() {
 
     if (isImageRequest) {
       try {
+        // Añadir mensaje de asistente temporal
+        setMessages(prev => [...prev, { role: "assistant", content: "Generando imagen..." }]);
+        
         const resp = await fetch(IMAGE_URL, {
           method: "POST",
           headers: {
@@ -43,23 +46,24 @@ export function useChat() {
         if (!resp.ok) {
           const errorData = await resp.json().catch(() => ({}));
           toast.error(errorData.error || "Error al generar la imagen");
-          setMessages(prev => prev.slice(0, -1));
+          setMessages(prev => prev.slice(0, -2)); // Remove user msg and temp assistant msg
           setIsLoading(false);
           return;
         }
 
         const data = await resp.json();
-        setMessages(prev => [...prev, { 
-          role: "assistant", 
-          content: data.text || "¡Aquí está tu imagen generada!",
-          imageUrl: data.imageUrl
-        }]);
+        // Actualizar el mensaje del asistente con la imagen
+        setMessages(prev => prev.map((m, i) => 
+          i === prev.length - 1 
+            ? { role: "assistant", content: data.text || "¡Aquí está tu imagen!", imageUrl: data.imageUrl }
+            : m
+        ));
         setIsLoading(false);
         return;
       } catch (error) {
         console.error("Image generation error:", error);
         toast.error("Error al generar la imagen");
-        setMessages(prev => prev.slice(0, -1));
+        setMessages(prev => prev.slice(0, -2));
         setIsLoading(false);
         return;
       }
