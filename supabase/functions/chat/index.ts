@@ -5,21 +5,119 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Allowed models list for validation
+const ALLOWED_MODELS = [
+  "google/gemini-2.5-flash-lite",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-pro",
+  "openai/gpt-5",
+  "openai/gpt-5-mini",
+  "openai/gpt-5-nano",
+  "anthropic/claude-opus-4.1",
+  "anthropic/claude-sonnet-4.5",
+  "anthropic/claude-sonnet-4",
+  "anthropic/claude-haiku-3.5",
+];
+
+const MAX_MESSAGE_LENGTH = 10000; // Max characters per message
+const MAX_MESSAGES = 50; // Max messages in conversation
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, model } = await req.json();
+    const body = await req.json();
+    
+    // Validate request body structure
+    if (!body || typeof body !== "object") {
+      console.error("Invalid request body");
+      return new Response(JSON.stringify({ error: "Solicitud inválida" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { messages, model } = body;
+
+    // Validate messages array
+    if (!Array.isArray(messages)) {
+      console.error("Messages is not an array");
+      return new Response(JSON.stringify({ error: "El formato de mensajes es inválido" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (messages.length === 0) {
+      console.error("Messages array is empty");
+      return new Response(JSON.stringify({ error: "No hay mensajes para procesar" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (messages.length > MAX_MESSAGES) {
+      console.error("Too many messages:", messages.length);
+      return new Response(JSON.stringify({ error: "Demasiados mensajes en la conversación" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate each message structure and length
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      if (!msg || typeof msg !== "object") {
+        console.error("Invalid message at index", i);
+        return new Response(JSON.stringify({ error: "Mensaje inválido en la conversación" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!msg.role || !["user", "assistant", "system"].includes(msg.role)) {
+        console.error("Invalid message role at index", i, msg.role);
+        return new Response(JSON.stringify({ error: "Rol de mensaje inválido" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (typeof msg.content !== "string") {
+        console.error("Invalid message content type at index", i);
+        return new Response(JSON.stringify({ error: "Contenido de mensaje inválido" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (msg.content.length > MAX_MESSAGE_LENGTH) {
+        console.error("Message too long at index", i, msg.content.length);
+        return new Response(JSON.stringify({ error: "Mensaje demasiado largo" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Validate model parameter
+    const selectedModel = model || "google/gemini-2.5-flash-lite";
+    if (!ALLOWED_MODELS.includes(selectedModel)) {
+      console.error("Invalid model requested:", model);
+      return new Response(JSON.stringify({ error: "Modelo no permitido" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       console.error("LOVABLE_API_KEY is not configured");
       throw new Error("LOVABLE_API_KEY is not configured");
     }
-
-    const selectedModel = model || "google/gemini-2.5-flash-lite";
     
     // Obtener fecha actual en tiempo real
     const now = new Date();
