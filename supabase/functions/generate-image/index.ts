@@ -19,6 +19,11 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Enhanced prompt for better image generation
+    const enhancedPrompt = `Generate a high-quality, detailed image based on this description: ${prompt}. 
+    Create a visually appealing and creative image that matches the request. 
+    Focus on quality, detail, and artistic value.`;
+
     console.log("Generating image with prompt:", prompt);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -32,7 +37,7 @@ serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: prompt
+            content: enhancedPrompt
           }
         ],
         modalities: ["image", "text"]
@@ -44,7 +49,7 @@ serve(async (req) => {
       console.error("AI gateway error:", response.status, errorText);
       
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Límite de solicitudes excedido." }), {
+        return new Response(JSON.stringify({ error: "Límite de solicitudes excedido. Intenta más tarde." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -56,7 +61,7 @@ serve(async (req) => {
         });
       }
       
-      return new Response(JSON.stringify({ error: "Error al generar la imagen" }), {
+      return new Response(JSON.stringify({ error: "Error al generar la imagen. Por favor intenta de nuevo." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -66,7 +71,15 @@ serve(async (req) => {
     console.log("Image generation response received");
     
     const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    const textContent = data.choices?.[0]?.message?.content || "";
+    const textContent = data.choices?.[0]?.message?.content || "¡Aquí está tu imagen!";
+
+    if (!imageUrl) {
+      console.error("No image URL in response:", JSON.stringify(data));
+      return new Response(JSON.stringify({ error: "No se pudo generar la imagen. Intenta con otra descripción." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ 
       imageUrl,
