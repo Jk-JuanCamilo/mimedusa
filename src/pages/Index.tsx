@@ -9,12 +9,9 @@ import { useChat } from "@/hooks/useChat";
 import { Trash2 } from "lucide-react";
 
 // Lazy load non-critical visual components
-const CircuitBackground = lazy(() => import("@/components/CircuitBackground").then(m => ({
-  default: m.CircuitBackground
-})));
-const FloatingJellyfish = lazy(() => import("@/components/FloatingJellyfish").then(m => ({
-  default: m.FloatingJellyfish
-})));
+const CircuitBackground = lazy(() => import("@/components/CircuitBackground").then(m => ({ default: m.CircuitBackground })));
+const FloatingJellyfish = lazy(() => import("@/components/FloatingJellyfish").then(m => ({ default: m.FloatingJellyfish })));
+
 const Index = () => {
   const {
     messages,
@@ -25,14 +22,14 @@ const Index = () => {
     setSelectedModel
   } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  
   // Auto-scroll siempre que hay nuevos mensajes o el asistente está escribiendo
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth"
-    });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
-  return <div className="flex flex-col h-screen relative">
+
+  return (
+    <div className="flex flex-col h-screen relative">
       {/* Animated Circuit Background - lazy loaded */}
       <Suspense fallback={null}>
         <CircuitBackground />
@@ -55,51 +52,62 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {messages.length > 0 && <Button variant="ghost" size="sm" onClick={clearChat} className="text-muted-foreground hover:text-destructive">
+            {messages.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearChat} className="text-muted-foreground hover:text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" />
                 Limpiar
-              </Button>}
+              </Button>
+            )}
             <AuthButton />
           </div>
         </header>
 
         {/* Chat area */}
         <ScrollArea className="flex-1 p-4">
-          {messages.length === 0 ? <div className="flex-col h-full min-h-[30vh] text-center px-4 shadow-none flex items-center justify-start">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full min-h-[30vh] text-center px-4">
               <MedussaLogo size="lg" className="mb-6" />
               <h2 className="text-2xl font-bold text-gradient mb-2">Medussa IA</h2>
               <p className="text-muted-foreground max-w-md">
                 Soy una inteligencia artificial avanzada lista para ayudarte con cualquier pregunta. Mi conocimiento es extenso
               </p>
-            </div> : <div className="space-y-4 max-w-3xl mx-auto pb-4">
-              {messages.map((message, index) => <ChatMessage key={index} {...message} />)}
-              {isLoading && messages[messages.length - 1]?.role === "user" && <div className="flex gap-3 p-4 rounded-lg bg-card/60 backdrop-blur-sm mr-8 border border-border/50">
+            </div>
+          ) : (
+            <div className="space-y-4 max-w-3xl mx-auto pb-4">
+              {messages.map((message, index) => (
+                <ChatMessage key={index} {...message} />
+              ))}
+              {isLoading && messages[messages.length - 1]?.role === "user" && (
+                <div className="flex gap-3 p-4 rounded-lg bg-card/60 backdrop-blur-sm mr-8 border border-border/50">
                   <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-accent/20 text-accent">
                     <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{
-                animationDelay: "0ms"
-              }} />
-                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{
-                animationDelay: "150ms"
-              }} />
-                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{
-                animationDelay: "300ms"
-              }} />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
-                </div>}
+                </div>
+              )}
               <div ref={messagesEndRef} />
-            </div>}
+            </div>
+          )}
         </ScrollArea>
 
         {/* Input area */}
         <div className="p-4 border-t border-border/50 bg-background/60 backdrop-blur-md">
           <div className="max-w-3xl mx-auto">
-            <ChatInput onSend={sendMessage} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
+            <ChatInput 
+              onSend={sendMessage} 
+              isLoading={isLoading}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+            />
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
