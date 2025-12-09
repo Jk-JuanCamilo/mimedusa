@@ -21,7 +21,7 @@ const actions = [
     id: "image",
     label: "Generar Imagen",
     icon: ImagePlus,
-    prompt: "Genera una imagen de "
+    prompt: "Genera una imagen de un atardecer en la playa con palmeras y colores vibrantes"
   },
   {
     id: "web",
