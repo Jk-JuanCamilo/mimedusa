@@ -116,9 +116,11 @@ serve(async (req) => {
     const textContent = data.choices?.[0]?.message?.content || "¡Aquí está tu imagen!";
 
     if (!imageUrl) {
-      console.error("No image URL in response:", JSON.stringify(data));
-      return new Response(JSON.stringify({ error: "No se pudo generar la imagen. Intenta con otra descripción." }), {
-        status: 500,
+      console.log("No image generated, returning text response:", textContent);
+      // Return the AI's text response instead of an error - it likely needs more details
+      return new Response(JSON.stringify({ 
+        text: textContent || "Por favor proporciona una descripción más detallada de la imagen que deseas generar."
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
