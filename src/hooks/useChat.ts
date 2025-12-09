@@ -11,14 +11,26 @@ export interface Message {
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
 
-export function useChat() {
+interface UseChatOptions {
+  onMessageComplete?: (role: "user" | "assistant", content: string, imageUrl?: string) => void;
+}
+
+export function useChat(options?: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState("google/gemini-2.5-flash-lite");
+  
+  const setMessagesExternal = useCallback((msgs: Message[]) => {
+    setMessages(msgs);
+  }, []);
 
   const sendMessage = useCallback(async (input: string, model?: string) => {
     const userMsg: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+    
+    // Notify about user message
+    options?.onMessageComplete?.("user", input);
     setIsLoading(true);
 
     // Check if user wants to generate an image
@@ -63,11 +75,14 @@ export function useChat() {
 
         const data = await resp.json();
         // Actualizar el mensaje del asistente con la imagen
+        const assistantContent = data.text || "¡Aquí está tu imagen!";
+        const imageUrl = data.imageUrl;
         setMessages(prev => prev.map((m, i) => 
           i === prev.length - 1 
-            ? { role: "assistant", content: data.text || "¡Aquí está tu imagen!", imageUrl: data.imageUrl }
+            ? { role: "assistant", content: assistantContent, imageUrl }
             : m
         ));
+        options?.onMessageComplete?.("assistant", assistantContent, imageUrl);
         setIsLoading(false);
         return;
       } catch (error) {
@@ -182,6 +197,11 @@ export function useChat() {
           } catch { /* ignore */ }
         }
       }
+      
+      // Notify about completed assistant message
+      if (assistantContent) {
+        options?.onMessageComplete?.("assistant", assistantContent);
+      }
 
     } catch (error) {
       console.error("Chat error:", error);
@@ -190,11 +210,19 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, selectedModel]);
+  }, [messages, selectedModel, options]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
   }, []);
 
-  return { messages, isLoading, sendMessage, clearChat, selectedModel, setSelectedModel };
+  return { 
+    messages, 
+    isLoading, 
+    sendMessage, 
+    clearChat, 
+    selectedModel, 
+    setSelectedModel,
+    setMessages: setMessagesExternal 
+  };
 }
