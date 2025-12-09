@@ -1,7 +1,7 @@
 project_id = "uqsbybajgrdbbjuauobi"
 
 [functions.chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-image]
-verify_jwt = false
+verify_jwt = true
