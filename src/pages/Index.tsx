@@ -1,32 +1,114 @@
-import { useEffect, useRef, lazy, Suspense } from "react";
+import { useEffect, useRef, lazy, Suspense, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { MedussaLogo } from "@/components/MedussaLogo";
 import { AuthButton } from "@/components/AuthButton";
+import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { useChat } from "@/hooks/useChat";
-import { Trash2 } from "lucide-react";
+import { useConversations } from "@/hooks/useConversations";
+import { Trash2, History, Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 // Lazy load non-critical visual components
 const CircuitBackground = lazy(() => import("@/components/CircuitBackground").then(m => ({ default: m.CircuitBackground })));
 const FloatingJellyfish = lazy(() => import("@/components/FloatingJellyfish").then(m => ({ default: m.FloatingJellyfish })));
 
 const Index = () => {
+  const [user, setUser] = useState<boolean>(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  const {
+    conversations,
+    currentConversationId,
+    setCurrentConversationId,
+    loadConversationMessages,
+    createConversation,
+    saveMessage,
+    deleteConversation,
+  } = useConversations();
+
+  const conversationIdRef = useRef<string | null>(null);
+  
+  const handleMessageComplete = useCallback(async (
+    role: "user" | "assistant",
+    content: string,
+    imageUrl?: string
+  ) => {
+    if (!user) return;
+    
+    let convId = conversationIdRef.current;
+    
+    // Create conversation on first user message
+    if (!convId && role === "user") {
+      convId = await createConversation(content.slice(0, 50));
+      conversationIdRef.current = convId;
+    }
+    
+    if (convId) {
+      await saveMessage(convId, role, content, imageUrl);
+    }
+  }, [user, createConversation, saveMessage]);
+
   const {
     messages,
     isLoading,
     sendMessage,
     clearChat,
     selectedModel,
-    setSelectedModel
-  } = useChat();
+    setSelectedModel,
+    setMessages
+  } = useChat({ onMessageComplete: handleMessageComplete });
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Update ref when currentConversationId changes
+  useEffect(() => {
+    conversationIdRef.current = currentConversationId;
+  }, [currentConversationId]);
+
+  // Check auth state
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      setUser(!!authUser);
+    };
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
   
   // Auto-scroll siempre que hay nuevos mensajes o el asistente está escribiendo
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  const handleSelectConversation = async (id: string) => {
+    const loadedMessages = await loadConversationMessages(id);
+    setMessages(loadedMessages);
+    setCurrentConversationId(id);
+    setSidebarOpen(false);
+  };
+
+  const handleNewConversation = () => {
+    clearChat();
+    setCurrentConversationId(null);
+    conversationIdRef.current = null;
+    setSidebarOpen(false);
+  };
+
+  const handleDeleteConversation = async (id: string) => {
+    await deleteConversation(id);
+    if (currentConversationId === id) {
+      clearChat();
+      conversationIdRef.current = null;
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen relative">
@@ -39,12 +121,35 @@ const Index = () => {
       <Suspense fallback={null}>
         <FloatingJellyfish />
       </Suspense>
+
+      {/* Conversation Sidebar */}
+      {user && (
+        <ConversationSidebar
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={handleNewConversation}
+          onDeleteConversation={handleDeleteConversation}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+      )}
       
       {/* Content overlay */}
       <div className="flex flex-col h-full relative z-10">
         {/* Header */}
         <header className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-background/60 backdrop-blur-md">
           <div className="flex items-center gap-3">
+            {user && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+                className="text-muted-foreground"
+              >
+                <History className="w-5 h-5" />
+              </Button>
+            )}
             <MedussaLogo size="sm" />
             <div>
               <h1 className="text-lg font-semibold text-gradient">Medussa IA</h1>
@@ -52,6 +157,17 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {user && messages.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleNewConversation}
+                className="text-muted-foreground"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nueva
+              </Button>
+            )}
             {messages.length > 0 && (
               <Button variant="ghost" size="sm" onClick={clearChat} className="text-muted-foreground hover:text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" />
