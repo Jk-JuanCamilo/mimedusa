@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Loader2, Download } from "lucide-react";
+import { FileText, Loader2, Download, Eye, ArrowLeft, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generatePDF, downloadPDF } from "@/utils/pdfGenerator";
@@ -26,6 +27,14 @@ interface PDFGeneratorDialogProps {
   disabled?: boolean;
   onSaveToHistory?: (userMessage: string, assistantMessage: string) => Promise<void>;
   isAuthenticated?: boolean;
+}
+
+interface PreviewData {
+  pdfBytes: Uint8Array;
+  pdfUrl: string;
+  content: string;
+  title: string;
+  filename: string;
 }
 
 const templateOptions = [
@@ -54,6 +63,24 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
   const [customTitle, setCustomTitle] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [saveToHistory, setSaveToHistory] = useState(true);
+  const [preview, setPreview] = useState<PreviewData | null>(null);
+
+  // Clean up blob URL when preview changes or dialog closes
+  useEffect(() => {
+    return () => {
+      if (preview?.pdfUrl) {
+        URL.revokeObjectURL(preview.pdfUrl);
+      }
+    };
+  }, [preview]);
+
+  const handleClose = () => {
+    if (preview?.pdfUrl) {
+      URL.revokeObjectURL(preview.pdfUrl);
+    }
+    setPreview(null);
+    setIsOpen(false);
+  };
 
   const handleGenerate = async () => {
     if (!templateType) {
@@ -93,23 +120,21 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
         templateType
       });
 
-      // Download the PDF
+      // Create blob URL for preview
+      const arrayBuffer = pdfBytes.slice().buffer;
+      const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+      const pdfUrl = URL.createObjectURL(blob);
       const filename = `${(customTitle || title || templateType).replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '').replace(/\s+/g, '_')}_${Date.now()}.pdf`;
-      downloadPDF(pdfBytes, filename);
 
-      // Save to conversation history if enabled
-      if (saveToHistory && onSaveToHistory && isAuthenticated) {
-        const templateLabel = templateOptions.find(t => t.value === templateType)?.label || templateType;
-        const userMessage = `📄 Generar PDF: ${templateLabel}\n\n${description}`;
-        const assistantMessage = `✅ **PDF Generado y Descargado**\n\n**Tipo:** ${templateLabel}\n**Título:** ${title || customTitle || "Sin título"}\n\n---\n\n${content}`;
-        await onSaveToHistory(userMessage, assistantMessage);
-      }
+      setPreview({
+        pdfBytes,
+        pdfUrl,
+        content,
+        title: title || customTitle || templateOptions.find(t => t.value === templateType)?.label || "Documento",
+        filename
+      });
 
-      toast.success("¡PDF generado y descargado!");
-      setIsOpen(false);
-      setDescription("");
-      setCustomTitle("");
-      setTemplateType("");
+      toast.success("¡Vista previa lista!");
 
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -119,8 +144,35 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
     }
   };
 
+  const handleDownload = async () => {
+    if (!preview) return;
+
+    downloadPDF(preview.pdfBytes, preview.filename);
+
+    // Save to conversation history if enabled
+    if (saveToHistory && onSaveToHistory && isAuthenticated) {
+      const templateLabel = templateOptions.find(t => t.value === templateType)?.label || templateType;
+      const userMessage = `📄 Generar PDF: ${templateLabel}\n\n${description}`;
+      const assistantMessage = `✅ **PDF Generado y Descargado**\n\n**Tipo:** ${templateLabel}\n**Título:** ${preview.title}\n\n---\n\n${preview.content}`;
+      await onSaveToHistory(userMessage, assistantMessage);
+    }
+
+    toast.success("¡PDF descargado!");
+    handleClose();
+    setDescription("");
+    setCustomTitle("");
+    setTemplateType("");
+  };
+
+  const handleBackToEdit = () => {
+    if (preview?.pdfUrl) {
+      URL.revokeObjectURL(preview.pdfUrl);
+    }
+    setPreview(null);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => open ? setIsOpen(true) : handleClose()}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -132,104 +184,155 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
           <span className="text-xs">Generar PDF</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-border max-w-lg">
+      <DialogContent className={`bg-card border-border ${preview ? 'max-w-4xl h-[90vh]' : 'max-w-lg'}`}>
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Generar Documento PDF
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-4 mt-4">
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Tipo de documento</label>
-            <Select value={templateType} onValueChange={setTemplateType}>
-              <SelectTrigger className="bg-background/50 border-border">
-                <SelectValue placeholder="Selecciona una plantilla..." />
-              </SelectTrigger>
-              <SelectContent>
-                {templateOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <div className="flex flex-col">
-                      <span>{option.label}</span>
-                      <span className="text-xs text-muted-foreground">{option.description}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Título personalizado (opcional)</label>
-            <Input
-              placeholder="Ej: Contrato de Arrendamiento 2024"
-              value={customTitle}
-              onChange={(e) => setCustomTitle(e.target.value)}
-              className="bg-background/50 border-border"
-              maxLength={100}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">
-              Describe qué necesitas en el documento
-            </label>
-            <Textarea
-              placeholder={
-                templateType === "contract" ? "Ej: Un contrato de arrendamiento para un apartamento en Bogotá, por 12 meses, con precio de $1,500,000 mensuales..."
-                : templateType === "invoice" ? "Ej: Factura para empresa XYZ, por servicios de diseño web, valor $2,000,000..."
-                : templateType === "cv" ? "Ej: CV para ingeniero de software con 5 años de experiencia en React, Python y AWS..."
-                : "Describe los detalles específicos que necesitas incluir..."
-              }
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="bg-background/50 border-border min-h-[120px]"
-              maxLength={5000}
-            />
-            <p className="text-xs text-muted-foreground text-right">
-              {description.length}/5000 caracteres
-            </p>
-          </div>
-
-          {isAuthenticated && onSaveToHistory && (
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="save-history" 
-                checked={saveToHistory}
-                onCheckedChange={(checked) => setSaveToHistory(checked === true)}
-              />
-              <label 
-                htmlFor="save-history" 
-                className="text-sm text-muted-foreground cursor-pointer"
-              >
-                Guardar en historial de conversaciones
-              </label>
-            </div>
-          )}
-
-          <Button
-            onClick={handleGenerate} 
-            disabled={isGenerating || !templateType || !description.trim()}
-            className="w-full"
-          >
-            {isGenerating ? (
+            {preview ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generando documento...
+                <Eye className="w-5 h-5" />
+                Vista Previa del PDF
               </>
             ) : (
               <>
-                <Download className="w-4 h-4 mr-2" />
-                Generar y Descargar PDF
+                <FileText className="w-5 h-5" />
+                Generar Documento PDF
               </>
             )}
-          </Button>
+          </DialogTitle>
+        </DialogHeader>
 
-          <p className="text-xs text-muted-foreground text-center">
-            El documento se generará con contenido profesional basado en tu descripción
-          </p>
-        </div>
+        {preview ? (
+          <div className="flex flex-col gap-4 h-full">
+            {/* PDF Preview */}
+            <div className="flex-1 min-h-0 border border-border rounded-lg overflow-hidden bg-muted">
+              <iframe
+                src={preview.pdfUrl}
+                className="w-full h-full min-h-[400px]"
+                title="Vista previa del PDF"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 justify-between">
+              <Button
+                variant="outline"
+                onClick={handleBackToEdit}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Volver a editar
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleClose}
+                  className="flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleDownload}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Descargar PDF
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Tipo de documento</label>
+              <Select value={templateType} onValueChange={setTemplateType}>
+                <SelectTrigger className="bg-background/50 border-border">
+                  <SelectValue placeholder="Selecciona una plantilla..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {templateOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex flex-col">
+                        <span>{option.label}</span>
+                        <span className="text-xs text-muted-foreground">{option.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Título personalizado (opcional)</label>
+              <Input
+                placeholder="Ej: Contrato de Arrendamiento 2024"
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                className="bg-background/50 border-border"
+                maxLength={100}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">
+                Describe qué necesitas en el documento
+              </label>
+              <Textarea
+                placeholder={
+                  templateType === "contract" ? "Ej: Un contrato de arrendamiento para un apartamento en Bogotá, por 12 meses, con precio de $1,500,000 mensuales..."
+                  : templateType === "invoice" ? "Ej: Factura para empresa XYZ, por servicios de diseño web, valor $2,000,000..."
+                  : templateType === "cv" ? "Ej: CV para ingeniero de software con 5 años de experiencia en React, Python y AWS..."
+                  : "Describe los detalles específicos que necesitas incluir..."
+                }
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="bg-background/50 border-border min-h-[120px]"
+                maxLength={5000}
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {description.length}/5000 caracteres
+              </p>
+            </div>
+
+            {isAuthenticated && onSaveToHistory && (
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="save-history" 
+                  checked={saveToHistory}
+                  onCheckedChange={(checked) => setSaveToHistory(checked === true)}
+                />
+                <label 
+                  htmlFor="save-history" 
+                  className="text-sm text-muted-foreground cursor-pointer"
+                >
+                  Guardar en historial de conversaciones
+                </label>
+              </div>
+            )}
+
+            <Button
+              onClick={handleGenerate} 
+              disabled={isGenerating || !templateType || !description.trim()}
+              className="w-full"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generando documento...
+                </>
+              ) : (
+                <>
+                  <Eye className="w-4 h-4 mr-2" />
+                  Generar y Ver Vista Previa
+                </>
+              )}
+            </Button>
+
+            <p className="text-xs text-muted-foreground text-center">
+              El documento se generará con contenido profesional basado en tu descripción
+            </p>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
