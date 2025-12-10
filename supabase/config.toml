@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.generate-pdf]
 verify_jwt = true
+
+[functions.generate-xlsx]
+verify_jwt = true

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
 import { PDFGeneratorDialog } from "./PDFGeneratorDialog";
+import { XLSXGeneratorDialog } from "./XLSXGeneratorDialog";
 
 interface ActionButtonsProps {
   onAction: (action: string, fileContent?: string) => void;
@@ -356,6 +357,13 @@ Describe qué necesitas hacer con este archivo.`);
 
       {/* PDF Generator */}
       <PDFGeneratorDialog 
+        disabled={disabled} 
+        onSaveToHistory={onSaveToHistory}
+        isAuthenticated={isAuthenticated}
+      />
+
+      {/* XLSX Generator */}
+      <XLSXGeneratorDialog 
         disabled={disabled} 
         onSaveToHistory={onSaveToHistory}
         isAuthenticated={isAuthenticated}
