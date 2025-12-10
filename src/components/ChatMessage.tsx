@@ -1,8 +1,9 @@
 import { cn } from "@/lib/utils";
-import { Bot, User, Download, FileText } from "lucide-react";
+import { Bot, User, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCallback, useMemo } from "react";
 import { Document, Packer, Paragraph, TextRun } from "docx";
+import * as XLSX from "xlsx";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -20,13 +21,20 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
                           content.includes("documento editado") ||
                           content.includes("documento corregido") ||
                           content.includes("Aquí está tu documento");
+    const isExcelDocument = content.includes("ARCHIVO EXCEL") ||
+                           content.includes("Excel editado") ||
+                           content.includes("hoja de cálculo") ||
+                           content.includes("archivo Excel") ||
+                           content.includes("datos de Excel") ||
+                           content.includes("tabla Excel") ||
+                           content.includes("📊") && (content.includes("Fila") || content.includes("Columna"));
     const hasEditableContent = content.includes("---CONTENIDO EDITADO---") || 
                                content.includes("Aquí está el contenido editado") ||
                                content.includes("archivo editado") ||
                                content.includes("contenido corregido") ||
                                hasCodeBlock;
 
-    return { hasCodeBlock, isWordDocument, hasEditableContent };
+    return { hasCodeBlock, isWordDocument, isExcelDocument, hasEditableContent };
   }, [content]);
 
   const handleDownload = useCallback(async () => {
@@ -34,6 +42,7 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
     let filename = "archivo_editado.txt";
     let mimeType = "text/plain";
     let isDocx = false;
+    let isXlsx = false;
 
     // Extraer contenido del bloque de código si existe
     const codeBlockMatch = content.match(/```(\w+)?\n?([\s\S]*?)```/);
@@ -58,6 +67,8 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
         txt: { ext: "txt", mime: "text/plain" },
         word: { ext: "docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
         docx: { ext: "docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+        excel: { ext: "xlsx", mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+        xlsx: { ext: "xlsx", mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
       };
       
       const extInfo = extMap[extension.toLowerCase()] || { ext: extension, mime: "text/plain" };
@@ -65,6 +76,9 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
       if (downloadInfo.isWordDocument || extension.toLowerCase() === "word" || extension.toLowerCase() === "docx") {
         isDocx = true;
         filename = "documento_editado.docx";
+      } else if (downloadInfo.isExcelDocument || extension.toLowerCase() === "excel" || extension.toLowerCase() === "xlsx") {
+        isXlsx = true;
+        filename = "archivo_excel.xlsx";
       } else {
         filename = `archivo_editado.${extInfo.ext}`;
         mimeType = extInfo.mime;
@@ -76,9 +90,67 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
         .trim();
       isDocx = true;
       filename = "documento_editado.docx";
+    } else if (downloadInfo.isExcelDocument) {
+      isXlsx = true;
+      filename = "archivo_excel.xlsx";
     }
 
-    if (isDocx) {
+    if (isXlsx) {
+      // Crear archivo Excel real (.xlsx)
+      const workbook = XLSX.utils.book_new();
+      
+      // Intentar extraer datos tabulares del contenido
+      const tableData: string[][] = [];
+      const lines = downloadContent.split('\n');
+      
+      // Buscar líneas con formato de tabla (separadas por |)
+      lines.forEach(line => {
+        if (line.includes('|') && !line.startsWith('---')) {
+          const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+          if (cells.length > 0) {
+            tableData.push(cells);
+          }
+        } else if (line.startsWith('Fila')) {
+          // Formato: "Fila X: valor1 | valor2 | valor3"
+          const match = line.match(/Fila \d+:\s*(.+)/);
+          if (match) {
+            const cells = match[1].split('|').map(cell => cell.trim());
+            tableData.push(cells);
+          }
+        }
+      });
+
+      // Si no se encontraron datos tabulares, crear una hoja con el contenido como texto
+      if (tableData.length === 0) {
+        const textRows = lines
+          .filter(line => line.trim())
+          .map(line => [line.replace(/\*\*/g, '').replace(/📊|📈|📋|🔢|📑|✏️|📝|✅|🔄|💡|⚠️|🛠️|📥|🎨/g, '').trim()]);
+        tableData.push(...textRows);
+      }
+
+      const worksheet = XLSX.utils.aoa_to_sheet(tableData);
+      
+      // Ajustar ancho de columnas
+      const colWidths = tableData[0]?.map((_, colIdx) => {
+        const maxLength = Math.max(...tableData.map(row => String(row[colIdx] || '').length));
+        return { wch: Math.min(Math.max(maxLength, 10), 50) };
+      }) || [];
+      worksheet['!cols'] = colWidths;
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
+      
+      // Generar archivo
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else if (isDocx) {
       // Crear documento Word real (.docx)
       const paragraphs = downloadContent.split('\n').map(line => 
         new Paragraph({
@@ -113,7 +185,7 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
-  }, [content, downloadInfo.isWordDocument]);
+  }, [content, downloadInfo.isWordDocument, downloadInfo.isExcelDocument]);
 
   return (
     <div
@@ -144,19 +216,25 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
           {content}
         </div>
-        {!isUser && (downloadInfo.hasEditableContent || downloadInfo.isWordDocument) && (
+        {!isUser && (downloadInfo.hasEditableContent || downloadInfo.isWordDocument || downloadInfo.isExcelDocument) && (
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleDownload}
             className="mt-2 gap-2"
           >
-            {downloadInfo.isWordDocument ? (
+            {downloadInfo.isExcelDocument ? (
+              <FileSpreadsheet className="w-4 h-4" />
+            ) : downloadInfo.isWordDocument ? (
               <FileText className="w-4 h-4" />
             ) : (
               <Download className="w-4 h-4" />
             )}
-            {downloadInfo.isWordDocument ? "Descargar documento" : "Descargar archivo"}
+            {downloadInfo.isExcelDocument 
+              ? "Descargar Excel" 
+              : downloadInfo.isWordDocument 
+                ? "Descargar documento" 
+                : "Descargar archivo"}
           </Button>
         )}
         {imageUrl && (

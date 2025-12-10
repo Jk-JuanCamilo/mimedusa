@@ -11,6 +11,7 @@ import {
 import { ImagePlus, Globe, Code, User, FileUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import mammoth from "mammoth";
+import * as XLSX from "xlsx";
 
 interface ActionButtonsProps {
   onAction: (action: string, fileContent?: string) => void;
@@ -96,6 +97,93 @@ Cuando realice ediciones, te proporcionaré el documento corregido con un botón
         onAction(prompt);
         toast.success(`Documento Word "${file.name}" analizado correctamente`);
       } 
+      // Handle Excel files (.xlsx, .xls)
+      else if (extension === 'xlsx' || extension === 'xls') {
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        let excelContent = `📊 **ARCHIVO EXCEL**: "${file.name}"\n`;
+        excelContent += `📑 **Hojas encontradas**: ${workbook.SheetNames.join(', ')}\n\n`;
+        
+        // Procesar cada hoja
+        workbook.SheetNames.forEach((sheetName, idx) => {
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
+          const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+          const rowCount = range.e.r - range.s.r + 1;
+          const colCount = range.e.c - range.s.c + 1;
+          
+          excelContent += `---\n### 📋 Hoja ${idx + 1}: "${sheetName}"\n`;
+          excelContent += `- Filas: ${rowCount} | Columnas: ${colCount}\n\n`;
+          
+          // Mostrar primeras 20 filas como vista previa
+          const previewRows = jsonData.slice(0, 20);
+          if (previewRows.length > 0) {
+            excelContent += `**Vista previa de datos:**\n\`\`\`\n`;
+            previewRows.forEach((row, rowIdx) => {
+              const rowArray = row as unknown[];
+              excelContent += `Fila ${rowIdx + 1}: ${rowArray.join(' | ')}\n`;
+            });
+            if (jsonData.length > 20) {
+              excelContent += `... y ${jsonData.length - 20} filas más\n`;
+            }
+            excelContent += `\`\`\`\n\n`;
+          }
+          
+          // Calcular estadísticas básicas para columnas numéricas
+          const numericStats: Record<number, { values: number[], header: string }> = {};
+          if (jsonData.length > 1) {
+            const headers = jsonData[0] as unknown[];
+            jsonData.slice(1).forEach(row => {
+              const rowArray = row as unknown[];
+              rowArray.forEach((cell, colIdx) => {
+                const numVal = parseFloat(String(cell));
+                if (!isNaN(numVal)) {
+                  if (!numericStats[colIdx]) {
+                    numericStats[colIdx] = { 
+                      values: [], 
+                      header: String(headers[colIdx] || `Columna ${colIdx + 1}`)
+                    };
+                  }
+                  numericStats[colIdx].values.push(numVal);
+                }
+              });
+            });
+          }
+          
+          // Mostrar estadísticas si hay datos numéricos
+          const statsEntries = Object.entries(numericStats);
+          if (statsEntries.length > 0) {
+            excelContent += `**📈 Estadísticas automáticas:**\n`;
+            statsEntries.slice(0, 5).forEach(([_, stat]) => {
+              const vals = stat.values;
+              const sum = vals.reduce((a, b) => a + b, 0);
+              const avg = sum / vals.length;
+              const min = Math.min(...vals);
+              const max = Math.max(...vals);
+              excelContent += `- **${stat.header}**: Promedio=${avg.toFixed(2)}, Min=${min}, Max=${max}, Total=${sum.toFixed(2)}\n`;
+            });
+            excelContent += `\n`;
+          }
+        });
+        
+        fileType = "EXCEL";
+        
+        const prompt = `${excelContent}
+**🛠️ PUEDO AYUDARTE CON:**
+- ✏️ Editar celdas y datos específicos
+- 📊 Crear resúmenes y análisis estadísticos completos
+- 📈 Generar tablas dinámicas y reportes
+- 🔢 Crear fórmulas y cálculos personalizados
+- 📋 Generar macros VBA
+- 🎨 Formatear y organizar datos
+- 📥 Descargar el Excel editado
+
+¿Qué necesitas hacer con este archivo Excel?`;
+
+        onAction(prompt);
+        toast.success(`Excel "${file.name}" analizado con ${workbook.SheetNames.length} hoja(s)`);
+      }
       // Handle .doc files (older Word format)
       else if (extension === 'doc') {
         content = `[DOCUMENTO .DOC DETECTADO]
