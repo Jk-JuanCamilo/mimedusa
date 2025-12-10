@@ -12,6 +12,7 @@ import { ImagePlus, Code, User, FileUp, Loader2, Trash2, Edit2 } from "lucide-re
 import { toast } from "sonner";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
+import { PDFGeneratorDialog } from "./PDFGeneratorDialog";
 
 interface ActionButtonsProps {
   onAction: (action: string, fileContent?: string) => void;
@@ -350,6 +351,9 @@ Describe qué necesitas hacer con este archivo.`);
           <span className="text-xs">{action.label}</span>
         </Button>
       ))}
+
+      {/* PDF Generator */}
+      <PDFGeneratorDialog disabled={disabled} />
 
       {/* File Upload Button */}
       <input
