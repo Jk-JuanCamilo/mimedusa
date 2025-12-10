@@ -56,8 +56,7 @@ export function ActionButtons({ onAction, disabled, userName, onUserNameChange }
       const newName = name.trim();
       onUserNameChange?.(newName);
       localStorage.setItem("medussa_user_name", newName);
-      onAction(`Hola, mi nombre es ${newName}. Recuérdalo para responderme de forma personalizada.`);
-      toast.success(`¡Nombre guardado: ${newName}!`);
+      toast.success(`¡Hola ${newName}! Ya recordaré tu nombre.`);
       setIsOpen(false);
       setName("");
     }
