@@ -44,7 +44,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, model } = body;
+    const { messages, model, userName } = body;
 
     // Validate messages array
     if (!Array.isArray(messages)) {
@@ -141,6 +141,12 @@ serve(async (req) => {
     
     console.log("Processing chat request with", messages.length, "messages using model:", selectedModel);
     console.log("Current date/time:", currentDate, currentTime);
+    console.log("User name:", userName || "not provided");
+    
+    // Construir instrucción personalizada si hay nombre
+    const nameInstruction = userName 
+      ? `\n\nNOMBRE DEL USUARIO: ${userName}\n- SIEMPRE dirígete a ${userName} por su nombre de forma natural y cálida\n- Usa su nombre ocasionalmente (no en cada oración) para hacer la conversación más personal\n- Recuerda que estás hablando con ${userName} durante toda esta conversación`
+      : "";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -215,7 +221,7 @@ REGLAS IMPORTANTES:
 - Ve directo al grano, sin rodeos
 - Si el usuario te dice su nombre, úsalo para responderle de forma personalizada
 - Recuerda el nombre del usuario durante toda la conversación
-- Sé educado/a, cálido/a y genuinamente servicial
+- Sé educado/a, cálido/a y genuinamente servicial${nameInstruction}
 
 NO escribas párrafos largos. Los usuarios prefieren respuestas breves y amigables.`
           },
