@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Table, Loader2, Download, Eye, ArrowLeft, X, Edit, RefreshCw } from "lucide-react";
+import { Table, Loader2, Download, Eye, ArrowLeft, X, Edit, RefreshCw, Upload, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
@@ -63,12 +63,80 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [importedCsvData, setImportedCsvData] = useState<unknown[][] | null>(null);
+  const [csvFileName, setCsvFileName] = useState<string>("");
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
   const handleClose = () => {
     setPreview(null);
     setIsOpen(false);
     setIsEditing(false);
     setEditedContent("");
+    setImportedCsvData(null);
+    setCsvFileName("");
+  };
+
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      const data: unknown[][] = [];
+
+      for (const line of lines) {
+        // Handle CSV with proper parsing (respecting quoted values)
+        const cells: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            cells.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        cells.push(current.trim());
+
+        // Convert numeric values
+        const parsedCells = cells.map(cell => {
+          const cleanCell = cell.replace(/^"|"$/g, '');
+          const num = parseFloat(cleanCell.replace(/[,$%]/g, ''));
+          return isNaN(num) || cleanCell === '' ? cleanCell : num;
+        });
+        
+        if (parsedCells.some(cell => cell !== '')) {
+          data.push(parsedCells);
+        }
+      }
+
+      if (data.length > 0) {
+        setImportedCsvData(data);
+        setCsvFileName(file.name);
+        toast.success(`CSV "${file.name}" importado con ${data.length} filas`);
+      } else {
+        toast.error("No se encontraron datos en el archivo CSV");
+      }
+    } catch (error) {
+      console.error("Error importing CSV:", error);
+      toast.error("Error al importar el archivo CSV");
+    }
+
+    if (csvInputRef.current) {
+      csvInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveCsv = () => {
+    setImportedCsvData(null);
+    setCsvFileName("");
+    toast.info("CSV eliminado");
   };
 
   const parseContentToData = (content: string): unknown[][] => {
@@ -163,8 +231,19 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
         return;
       }
 
+      // Convert imported CSV data to string format for AI processing
+      let csvDataString = "";
+      if (importedCsvData && importedCsvData.length > 0) {
+        csvDataString = importedCsvData.map(row => (row as unknown[]).join(' | ')).join('\n');
+      }
+
       const response = await supabase.functions.invoke('generate-xlsx', {
-        body: { templateType, description, customTitle: customTitle.trim() || undefined }
+        body: { 
+          templateType, 
+          description, 
+          customTitle: customTitle.trim() || undefined,
+          importedData: csvDataString || undefined
+        }
       });
 
       if (response.error) {
@@ -479,6 +558,71 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
               <p className="text-xs text-muted-foreground text-right">
                 {description.length}/5000 caracteres
               </p>
+            </div>
+
+            {/* CSV Import Section */}
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">
+                Importar datos desde CSV (opcional)
+              </label>
+              <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleCsvImport}
+                className="hidden"
+              />
+              {importedCsvData ? (
+                <div className="border border-border rounded-lg p-3 bg-background/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{csvFileName}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveCsv}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {importedCsvData.length} filas importadas • Los datos se usarán como base para el Excel
+                  </p>
+                  <div className="mt-2 max-h-[100px] overflow-auto border border-border/50 rounded text-xs">
+                    <table className="w-full">
+                      <tbody>
+                        {importedCsvData.slice(0, 5).map((row, idx) => (
+                          <tr key={idx} className={idx === 0 ? "bg-primary/10 font-medium" : ""}>
+                            {(row as unknown[]).slice(0, 5).map((cell, cellIdx) => (
+                              <td key={cellIdx} className="px-2 py-1 border-r border-border/30 whitespace-nowrap">
+                                {String(cell ?? '').substring(0, 20)}
+                              </td>
+                            ))}
+                            {(row as unknown[]).length > 5 && <td className="px-2 py-1 text-muted-foreground">...</td>}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {importedCsvData.length > 5 && (
+                      <p className="text-center py-1 text-muted-foreground">
+                        ... y {importedCsvData.length - 5} filas más
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => csvInputRef.current?.click()}
+                  className="w-full flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  Seleccionar archivo CSV
+                </Button>
+              )}
             </div>
 
             {isAuthenticated && onSaveToHistory && (
