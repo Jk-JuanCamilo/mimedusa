@@ -105,13 +105,29 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
           </Button>
         )}
         {imageUrl && (
-          <div className="mt-3">
+          <div className="mt-3 space-y-2">
             <img 
               src={imageUrl} 
               alt="Imagen generada por IA"
               className="max-w-full rounded-lg border border-border/50 shadow-lg"
               style={{ maxHeight: '400px' }}
             />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                const a = document.createElement("a");
+                a.href = imageUrl;
+                a.download = "imagen_medussa.png";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }}
+              className="gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Descargar imagen
+            </Button>
           </div>
         )}
       </div>
