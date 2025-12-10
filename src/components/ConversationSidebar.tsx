@@ -1,6 +1,17 @@
 import { MessageSquare, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/hooks/useConversations";
 
@@ -10,6 +21,7 @@ interface ConversationSidebarProps {
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
+  onDeleteAllConversations: () => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -20,6 +32,7 @@ export function ConversationSidebar({
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
+  onDeleteAllConversations,
   isOpen,
   onClose,
 }: ConversationSidebarProps) {
@@ -97,6 +110,41 @@ export function ConversationSidebar({
             </div>
           )}
         </ScrollArea>
+
+        {/* Delete All Button */}
+        {conversations.length > 0 && (
+          <div className="p-3 border-t border-border">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="w-full"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Eliminar todo el historial
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-card border-border">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Eliminar todo el historial?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción eliminará todas tus conversaciones permanentemente. No se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={onDeleteAllConversations}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Eliminar todo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
       </div>
     </>
   );
