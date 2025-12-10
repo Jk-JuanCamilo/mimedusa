@@ -84,7 +84,7 @@ export const CHAT_MODELS: AIModel[] = [
   },
 ];
 
-// Modelos de Generación de Imágenes
+// Modelos de Generación de Imágenes (usan función separada generate-image)
 export const IMAGE_MODELS: AIModel[] = [
   {
     id: "google/gemini-2.5-flash-image-preview",
@@ -98,16 +98,10 @@ export const IMAGE_MODELS: AIModel[] = [
     description: "Alta calidad - Próxima gen",
     provider: "Google"
   },
-  {
-    id: "openai/gpt-image-1",
-    name: "DALL-E / GPT Image",
-    description: "Creador de imágenes de ChatGPT",
-    provider: "OpenAI"
-  },
 ];
 
-// Todos los modelos combinados
-export const AI_MODELS: AIModel[] = [...CHAT_MODELS, ...IMAGE_MODELS];
+// Solo modelos de chat para el selector principal
+export const AI_MODELS: AIModel[] = [...CHAT_MODELS];
 
 interface ModelSelectorProps {
   value: string;
@@ -130,23 +124,6 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
             💬 Modelos de Chat
           </div>
           {CHAT_MODELS.map((model) => (
-            <SelectItem 
-              key={model.id} 
-              value={model.id}
-              className="text-xs"
-            >
-              <div className="flex flex-col">
-                <span className="font-medium">{model.name}</span>
-                <span className="text-muted-foreground text-[10px]">
-                  {model.provider} • {model.description}
-                </span>
-              </div>
-            </SelectItem>
-          ))}
-          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-b border-border mt-2 mb-1">
-            🎨 Generación de Imágenes
-          </div>
-          {IMAGE_MODELS.map((model) => (
             <SelectItem 
               key={model.id} 
               value={model.id}
