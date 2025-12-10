@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { SidebarJellyfish } from "./SidebarJellyfish";
 import type { Conversation } from "@/hooks/useConversations";
 
 interface ConversationSidebarProps {
@@ -49,9 +50,11 @@ export function ConversationSidebar({
       {/* Sidebar */}
       <div className={cn(
         "fixed left-0 top-0 h-full w-72 bg-card/95 backdrop-blur-md border-r border-border z-50",
-        "flex flex-col transition-transform duration-300",
+        "flex flex-col transition-transform duration-300 overflow-hidden",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
+        {/* Animated Jellyfish Background */}
+        <SidebarJellyfish />
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="font-semibold text-foreground">Historial</h2>
           <div className="flex gap-2">
