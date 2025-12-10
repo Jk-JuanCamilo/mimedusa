@@ -3,62 +3,62 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Medussa IA - Dark Mystical Theme */
-
 @layer base {
+  /* Medussa IA - Light Theme (Day Mode) */
   :root {
-    --background: 270 50% 5%;
-    --foreground: 270 20% 95%;
+    --background: 270 30% 98%;
+    --foreground: 270 50% 10%;
 
-    --card: 270 45% 8%;
-    --card-foreground: 270 20% 95%;
+    --card: 270 20% 95%;
+    --card-foreground: 270 50% 10%;
 
-    --popover: 270 45% 10%;
-    --popover-foreground: 270 20% 95%;
+    --popover: 270 20% 97%;
+    --popover-foreground: 270 50% 10%;
 
-    --primary: 280 100% 65%;
-    --primary-foreground: 270 50% 5%;
+    --primary: 280 80% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 270 30% 15%;
-    --secondary-foreground: 270 20% 90%;
+    --secondary: 270 20% 90%;
+    --secondary-foreground: 270 40% 20%;
 
-    --muted: 270 20% 20%;
-    --muted-foreground: 270 15% 60%;
+    --muted: 270 15% 88%;
+    --muted-foreground: 270 20% 40%;
 
-    --accent: 300 80% 60%;
-    --accent-foreground: 270 50% 5%;
+    --accent: 300 70% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 50%;
-    --destructive-foreground: 0 85% 97%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 270 30% 18%;
-    --input: 270 30% 15%;
-    --ring: 280 100% 65%;
+    --border: 270 20% 85%;
+    --input: 270 20% 90%;
+    --ring: 280 80% 55%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 270 45% 8%;
-    --sidebar-foreground: 270 20% 95%;
-    --sidebar-primary: 280 100% 65%;
-    --sidebar-primary-foreground: 270 50% 5%;
-    --sidebar-accent: 300 80% 60%;
-    --sidebar-accent-foreground: 270 50% 5%;
-    --sidebar-border: 270 30% 18%;
-    --sidebar-ring: 280 100% 65%;
+    --sidebar-background: 270 20% 95%;
+    --sidebar-foreground: 270 50% 10%;
+    --sidebar-primary: 280 80% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 300 70% 50%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 270 20% 85%;
+    --sidebar-ring: 280 80% 55%;
 
-    --chart-1: 280 100% 65%;
-    --chart-2: 300 80% 60%;
-    --chart-3: 260 80% 70%;
-    --chart-4: 320 70% 55%;
-    --chart-5: 240 60% 50%;
+    --chart-1: 280 80% 55%;
+    --chart-2: 300 70% 50%;
+    --chart-3: 260 70% 60%;
+    --chart-4: 320 60% 50%;
+    --chart-5: 240 50% 45%;
 
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-    --glow-primary: 0 0 20px hsl(280 100% 65% / 0.4);
-    --glow-accent: 0 0 30px hsl(300 80% 60% / 0.3);
+    --glow-primary: 0 0 15px hsl(280 80% 55% / 0.3);
+    --glow-accent: 0 0 20px hsl(300 70% 50% / 0.2);
   }
 
+  /* Medussa IA - Dark Theme (Night Mode) */
   .dark {
     --background: 270 50% 5%;
     --foreground: 270 20% 95%;
@@ -87,7 +87,7 @@
     --border: 270 30% 18%;
     --input: 270 30% 15%;
     --ring: 280 100% 65%;
-    
+
     --sidebar-background: 270 45% 8%;
     --sidebar-foreground: 270 20% 95%;
     --sidebar-primary: 280 100% 65%;
@@ -96,6 +96,15 @@
     --sidebar-accent-foreground: 270 50% 5%;
     --sidebar-border: 270 30% 18%;
     --sidebar-ring: 280 100% 65%;
+
+    --chart-1: 280 100% 65%;
+    --chart-2: 300 80% 60%;
+    --chart-3: 260 80% 70%;
+    --chart-4: 320 70% 55%;
+    --chart-5: 240 60% 50%;
+
+    --glow-primary: 0 0 20px hsl(280 100% 65% / 0.4);
+    --glow-accent: 0 0 30px hsl(300 80% 60% / 0.3);
   }
 }
 
