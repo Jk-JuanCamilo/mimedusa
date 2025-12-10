@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { Bot, User, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCallback, useMemo } from "react";
+import { Document, Packer, Paragraph, TextRun } from "docx";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -28,10 +29,11 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
     return { hasCodeBlock, isWordDocument, hasEditableContent };
   }, [content]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     let downloadContent = content;
     let filename = "archivo_editado.txt";
     let mimeType = "text/plain";
+    let isDocx = false;
 
     // Extraer contenido del bloque de código si existe
     const codeBlockMatch = content.match(/```(\w+)?\n?([\s\S]*?)```/);
@@ -54,37 +56,63 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
         csv: { ext: "csv", mime: "text/csv" },
         sql: { ext: "sql", mime: "text/x-sql" },
         txt: { ext: "txt", mime: "text/plain" },
-        word: { ext: "txt", mime: "text/plain" },
-        docx: { ext: "txt", mime: "text/plain" },
+        word: { ext: "docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+        docx: { ext: "docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
       };
       
       const extInfo = extMap[extension.toLowerCase()] || { ext: extension, mime: "text/plain" };
       
-      // Si es documento Word, usar nombre apropiado
-      if (downloadInfo.isWordDocument) {
-        filename = "documento_editado.txt";
+      if (downloadInfo.isWordDocument || extension.toLowerCase() === "word" || extension.toLowerCase() === "docx") {
+        isDocx = true;
+        filename = "documento_editado.docx";
       } else {
         filename = `archivo_editado.${extInfo.ext}`;
+        mimeType = extInfo.mime;
       }
-      mimeType = extInfo.mime;
     } else if (downloadInfo.isWordDocument) {
-      // Extraer texto sin formato del contenido
       downloadContent = content
         .replace(/\*\*/g, '')
         .replace(/📄|✏️|📝|✅|📊|🔄|💡|⚠️/g, '')
         .trim();
-      filename = "documento_editado.txt";
+      isDocx = true;
+      filename = "documento_editado.docx";
     }
 
-    const blob = new Blob([downloadContent], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (isDocx) {
+      // Crear documento Word real (.docx)
+      const paragraphs = downloadContent.split('\n').map(line => 
+        new Paragraph({
+          children: [new TextRun(line)],
+        })
+      );
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: paragraphs,
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      const blob = new Blob([downloadContent], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   }, [content, downloadInfo.isWordDocument]);
 
   return (
