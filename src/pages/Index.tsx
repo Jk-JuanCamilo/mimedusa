@@ -120,6 +120,23 @@ const Index = () => {
     conversationIdRef.current = null;
   };
 
+  const handleSaveToHistory = useCallback(async (userMessage: string, assistantMessage: string) => {
+    if (!user) return;
+    
+    let convId = conversationIdRef.current;
+    
+    // Create conversation if none exists
+    if (!convId) {
+      convId = await createConversation(userMessage.slice(0, 50));
+      conversationIdRef.current = convId;
+    }
+    
+    if (convId) {
+      await saveMessage(convId, "user", userMessage);
+      await saveMessage(convId, "assistant", assistantMessage);
+    }
+  }, [user, createConversation, saveMessage]);
+
   return (
     <div className="flex flex-col h-screen relative">
       {/* Animated Circuit Background - lazy loaded */}
@@ -232,6 +249,8 @@ const Index = () => {
               onModelChange={setSelectedModel}
               userName={userName}
               onUserNameChange={setUserName}
+              onSaveToHistory={handleSaveToHistory}
+              isAuthenticated={user}
             />
           </div>
         </div>

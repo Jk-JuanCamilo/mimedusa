@@ -19,6 +19,8 @@ interface ActionButtonsProps {
   disabled?: boolean;
   userName?: string | null;
   onUserNameChange?: (name: string | null) => void;
+  onSaveToHistory?: (userMessage: string, assistantMessage: string) => Promise<void>;
+  isAuthenticated?: boolean;
 }
 
 const actions = [
@@ -36,7 +38,7 @@ const actions = [
   },
 ];
 
-export function ActionButtons({ onAction, disabled, userName, onUserNameChange }: ActionButtonsProps) {
+export function ActionButtons({ onAction, disabled, userName, onUserNameChange, onSaveToHistory, isAuthenticated }: ActionButtonsProps) {
   const [name, setName] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -353,7 +355,11 @@ Describe qué necesitas hacer con este archivo.`);
       ))}
 
       {/* PDF Generator */}
-      <PDFGeneratorDialog disabled={disabled} />
+      <PDFGeneratorDialog 
+        disabled={disabled} 
+        onSaveToHistory={onSaveToHistory}
+        isAuthenticated={isAuthenticated}
+      />
 
       {/* File Upload Button */}
       <input

@@ -13,9 +13,11 @@ interface ChatInputProps {
   onModelChange: (model: string) => void;
   userName?: string | null;
   onUserNameChange?: (name: string | null) => void;
+  onSaveToHistory?: (userMessage: string, assistantMessage: string) => Promise<void>;
+  isAuthenticated?: boolean;
 }
 
-export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelChange, userName, onUserNameChange }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelChange, userName, onUserNameChange, onSaveToHistory, isAuthenticated }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -94,6 +96,8 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
         disabled={isLoading || disabled}
         userName={userName}
         onUserNameChange={onUserNameChange}
+        onSaveToHistory={onSaveToHistory}
+        isAuthenticated={isAuthenticated}
       />
 
       {/* Input Area */}

@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,8 @@ import { generatePDF, downloadPDF } from "@/utils/pdfGenerator";
 
 interface PDFGeneratorDialogProps {
   disabled?: boolean;
+  onSaveToHistory?: (userMessage: string, assistantMessage: string) => Promise<void>;
+  isAuthenticated?: boolean;
 }
 
 const templateOptions = [
@@ -44,12 +47,13 @@ const templateOptions = [
   { value: "complaint", label: "📢 Queja", description: "Quejas formales ante autoridades" },
 ];
 
-export function PDFGeneratorDialog({ disabled }: PDFGeneratorDialogProps) {
+export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated }: PDFGeneratorDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [templateType, setTemplateType] = useState("");
   const [description, setDescription] = useState("");
   const [customTitle, setCustomTitle] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [saveToHistory, setSaveToHistory] = useState(true);
 
   const handleGenerate = async () => {
     if (!templateType) {
@@ -92,6 +96,14 @@ export function PDFGeneratorDialog({ disabled }: PDFGeneratorDialogProps) {
       // Download the PDF
       const filename = `${(customTitle || title || templateType).replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '').replace(/\s+/g, '_')}_${Date.now()}.pdf`;
       downloadPDF(pdfBytes, filename);
+
+      // Save to conversation history if enabled
+      if (saveToHistory && onSaveToHistory && isAuthenticated) {
+        const templateLabel = templateOptions.find(t => t.value === templateType)?.label || templateType;
+        const userMessage = `📄 Generar PDF: ${templateLabel}\n\n${description}`;
+        const assistantMessage = `✅ **PDF Generado y Descargado**\n\n**Tipo:** ${templateLabel}\n**Título:** ${title || customTitle || "Sin título"}\n\n---\n\n${content}`;
+        await onSaveToHistory(userMessage, assistantMessage);
+      }
 
       toast.success("¡PDF generado y descargado!");
       setIsOpen(false);
@@ -180,7 +192,23 @@ export function PDFGeneratorDialog({ disabled }: PDFGeneratorDialogProps) {
             </p>
           </div>
 
-          <Button 
+          {isAuthenticated && onSaveToHistory && (
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="save-history" 
+                checked={saveToHistory}
+                onCheckedChange={(checked) => setSaveToHistory(checked === true)}
+              />
+              <label 
+                htmlFor="save-history" 
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
+                Guardar en historial de conversaciones
+              </label>
+            </div>
+          )}
+
+          <Button
             onClick={handleGenerate} 
             disabled={isGenerating || !templateType || !description.trim()}
             className="w-full"
