@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,6 +11,25 @@ export interface Message {
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
 
+const USER_NAME_KEY = "medussa_user_name";
+
+// Detecta el nombre del usuario en el mensaje
+function extractUserName(message: string): string | null {
+  const patterns = [
+    /(?:me llamo|mi nombre es|soy|llámame|puedes llamarme|me dicen)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+)/i,
+    /(?:i'm|my name is|call me|i am)\s+([A-Za-z]+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      // Capitalizar primera letra
+      return match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+    }
+  }
+  return null;
+}
+
 interface UseChatOptions {
   onMessageComplete?: (role: "user" | "assistant", content: string, imageUrl?: string) => void;
 }
@@ -19,19 +38,35 @@ export function useChat(options?: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState("google/gemini-2.5-flash-lite");
+  const [userName, setUserName] = useState<string | null>(() => {
+    return localStorage.getItem(USER_NAME_KEY);
+  });
+  
+  // Guardar nombre en localStorage cuando cambie
+  useEffect(() => {
+    if (userName) {
+      localStorage.setItem(USER_NAME_KEY, userName);
+    }
+  }, [userName]);
   
   const setMessagesExternal = useCallback((msgs: Message[]) => {
     setMessages(msgs);
   }, []);
 
   const sendMessage = useCallback(async (input: string, model?: string) => {
+    // Detectar si el usuario dice su nombre
+    const detectedName = extractUserName(input);
+    if (detectedName) {
+      setUserName(detectedName);
+      toast.success(`¡Hola ${detectedName}! Ya recordaré tu nombre.`);
+    }
+    
     const userMsg: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
     
     // Notify about user message
     options?.onMessageComplete?.("user", input);
-    setIsLoading(true);
 
     // Check if user wants to generate an image
     const isImageRequest = input.toLowerCase().includes("genera una imagen") || 
@@ -127,7 +162,8 @@ export function useChat(options?: UseChatOptions) {
         },
         body: JSON.stringify({ 
           messages: [...messages, userMsg],
-          model: model || selectedModel
+          model: model || selectedModel,
+          userName: userName
         }),
       });
 
@@ -210,7 +246,7 @@ export function useChat(options?: UseChatOptions) {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, selectedModel, options]);
+  }, [messages, selectedModel, options, userName]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
@@ -223,6 +259,8 @@ export function useChat(options?: UseChatOptions) {
     clearChat, 
     selectedModel, 
     setSelectedModel,
-    setMessages: setMessagesExternal 
+    setMessages: setMessagesExternal,
+    userName,
+    setUserName
   };
 }
