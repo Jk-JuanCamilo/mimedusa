@@ -74,7 +74,7 @@ serve(async (req) => {
   }
 
   try {
-    const { templateType, description, customTitle, importedData } = await req.json();
+    const { templateType, description, customTitle, importedData, includeCharts } = await req.json();
 
     if (!templateType || !description) {
       return new Response(
@@ -98,6 +98,18 @@ serve(async (req) => {
 
     const hasImportedData = importedData && importedData.trim().length > 0;
 
+    const chartInstructions = includeCharts ? `
+INSTRUCCIONES PARA GRÁFICOS (OBLIGATORIO):
+- DEBES crear una hoja adicional llamada "--- HOJA: Gráficos"
+- En esta hoja incluye:
+  1. Un RESUMEN con totales, promedios y métricas clave organizados para gráficos
+  2. Datos agregados por categoría/período listos para gráficos de barras/líneas
+  3. Porcentajes calculados para gráficos de torta/dona
+  4. Una sección "DATOS PARA GRÁFICOS" con columnas: Categoría | Valor | Porcentaje
+  5. Una sección "TENDENCIA" si hay datos temporales: Período | Valor
+- Los datos deben estar organizados para que Excel pueda crear gráficos automáticamente al seleccionarlos
+` : '';
+
     const systemPrompt = `Eres un experto en Excel y análisis de datos. ${template.systemPrompt}
 
 INSTRUCCIONES CRÍTICAS:
@@ -108,6 +120,7 @@ INSTRUCCIONES CRÍTICAS:
 5. Si el usuario pide fórmulas o macros, inclúyelas como texto explicativo después de la tabla
 6. Para múltiples hojas, usa "--- HOJA: NombreHoja" como separador
 ${hasImportedData ? '7. El usuario ha importado datos CSV - DEBES usar estos datos como base y aplicar las transformaciones/análisis solicitados' : ''}
+${chartInstructions}
 
 ${template.columns.length > 0 ? `Columnas sugeridas: ${template.columns.join(', ')}` : ''}
 
@@ -127,6 +140,10 @@ End Sub
     
     if (hasImportedData) {
       userMessage += `\n\n--- DATOS IMPORTADOS DEL CSV ---\n${importedData}\n--- FIN DATOS IMPORTADOS ---\n\nUsa estos datos como base para el Excel y aplica las transformaciones/análisis solicitados.`;
+    }
+
+    if (includeCharts) {
+      userMessage += `\n\nIMPORTANTE: Incluye una hoja de "Gráficos" con datos agregados y resumen visual listos para crear gráficos en Excel.`;
     }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
