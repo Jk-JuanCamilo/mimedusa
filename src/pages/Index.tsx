@@ -5,6 +5,7 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { MedussaLogo } from "@/components/MedussaLogo";
 import { AuthButton } from "@/components/AuthButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { useChat } from "@/hooks/useChat";
 import { useConversations } from "@/hooks/useConversations";
@@ -184,6 +185,7 @@ const Index = () => {
                 Limpiar
               </Button>
             )}
+            <ThemeToggle />
             <AuthButton />
           </div>
         </header>
