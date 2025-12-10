@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Loader2, Download, Eye, ArrowLeft, X } from "lucide-react";
+import { FileText, Loader2, Download, Eye, ArrowLeft, X, Edit, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generatePDF, downloadPDF } from "@/utils/pdfGenerator";
@@ -64,6 +64,9 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
   const [isGenerating, setIsGenerating] = useState(false);
   const [saveToHistory, setSaveToHistory] = useState(true);
   const [preview, setPreview] = useState<PreviewData | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState("");
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   // Clean up blob URL when preview changes or dialog closes
   useEffect(() => {
@@ -169,6 +172,52 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
       URL.revokeObjectURL(preview.pdfUrl);
     }
     setPreview(null);
+    setIsEditing(false);
+    setEditedContent("");
+  };
+
+  const handleStartEditing = () => {
+    if (preview) {
+      setEditedContent(preview.content);
+      setIsEditing(true);
+    }
+  };
+
+  const handleRegeneratePDF = async () => {
+    if (!preview || !editedContent.trim()) return;
+    
+    setIsRegenerating(true);
+    try {
+      // Regenerate PDF with edited content
+      const pdfBytes = await generatePDF({
+        title: preview.title,
+        content: editedContent,
+        templateType
+      });
+
+      // Clean up old blob URL
+      URL.revokeObjectURL(preview.pdfUrl);
+
+      // Create new blob URL
+      const arrayBuffer = pdfBytes.slice().buffer;
+      const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+      const pdfUrl = URL.createObjectURL(blob);
+
+      setPreview({
+        ...preview,
+        pdfBytes,
+        pdfUrl,
+        content: editedContent
+      });
+
+      setIsEditing(false);
+      toast.success("¡PDF actualizado con tus cambios!");
+    } catch (error) {
+      console.error("Error regenerating PDF:", error);
+      toast.error("Error al regenerar el PDF");
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
   return (
@@ -203,41 +252,95 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
 
         {preview ? (
           <div className="flex flex-col gap-4 h-full">
-            {/* PDF Preview */}
+            {/* PDF Preview or Editor */}
             <div className="flex-1 min-h-0 border border-border rounded-lg overflow-hidden bg-muted">
-              <iframe
-                src={preview.pdfUrl}
-                className="w-full h-full min-h-[400px]"
-                title="Vista previa del PDF"
-              />
+              {isEditing ? (
+                <ScrollArea className="h-full">
+                  <Textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="w-full h-full min-h-[400px] bg-background border-0 resize-none p-4 font-mono text-sm"
+                    placeholder="Edita el contenido del documento..."
+                  />
+                </ScrollArea>
+              ) : (
+                <iframe
+                  src={preview.pdfUrl}
+                  className="w-full h-full min-h-[400px]"
+                  title="Vista previa del PDF"
+                />
+              )}
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 justify-between">
-              <Button
-                variant="outline"
-                onClick={handleBackToEdit}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Volver a editar
-              </Button>
+            <div className="flex gap-2 justify-between flex-wrap">
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={handleClose}
+                  onClick={handleBackToEdit}
                   className="flex items-center gap-2"
                 >
-                  <X className="w-4 h-4" />
-                  Cancelar
+                  <ArrowLeft className="w-4 h-4" />
+                  Volver
                 </Button>
-                <Button
-                  onClick={handleDownload}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Descargar PDF
-                </Button>
+                {isEditing ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditing(false)}
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Ver PDF
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={handleStartEditing}
+                    className="flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Editar contenido
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {isEditing ? (
+                  <Button
+                    onClick={handleRegeneratePDF}
+                    disabled={isRegenerating || !editedContent.trim()}
+                    className="flex items-center gap-2"
+                  >
+                    {isRegenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Regenerando...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        Aplicar cambios
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={handleClose}
+                      className="flex items-center gap-2"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={handleDownload}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Descargar PDF
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
