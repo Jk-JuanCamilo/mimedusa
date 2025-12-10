@@ -74,7 +74,7 @@ serve(async (req) => {
   }
 
   try {
-    const { templateType, description, customTitle } = await req.json();
+    const { templateType, description, customTitle, importedData } = await req.json();
 
     if (!templateType || !description) {
       return new Response(
@@ -96,6 +96,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY no está configurada");
     }
 
+    const hasImportedData = importedData && importedData.trim().length > 0;
+
     const systemPrompt = `Eres un experto en Excel y análisis de datos. ${template.systemPrompt}
 
 INSTRUCCIONES CRÍTICAS:
@@ -105,6 +107,7 @@ INSTRUCCIONES CRÍTICAS:
 4. Usa datos realistas y relevantes basados en la descripción del usuario
 5. Si el usuario pide fórmulas o macros, inclúyelas como texto explicativo después de la tabla
 6. Para múltiples hojas, usa "--- HOJA: NombreHoja" como separador
+${hasImportedData ? '7. El usuario ha importado datos CSV - DEBES usar estos datos como base y aplicar las transformaciones/análisis solicitados' : ''}
 
 ${template.columns.length > 0 ? `Columnas sugeridas: ${template.columns.join(', ')}` : ''}
 
@@ -120,6 +123,12 @@ Sub NombreMacro()
 End Sub
 ================`;
 
+    let userMessage = `Genera un archivo Excel para: ${description}`;
+    
+    if (hasImportedData) {
+      userMessage += `\n\n--- DATOS IMPORTADOS DEL CSV ---\n${importedData}\n--- FIN DATOS IMPORTADOS ---\n\nUsa estos datos como base para el Excel y aplica las transformaciones/análisis solicitados.`;
+    }
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -130,7 +139,7 @@ End Sub
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Genera un archivo Excel para: ${description}` }
+          { role: 'user', content: userMessage }
         ],
       }),
     });
