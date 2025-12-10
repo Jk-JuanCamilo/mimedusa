@@ -58,7 +58,9 @@ const Index = () => {
     clearChat,
     selectedModel,
     setSelectedModel,
-    setMessages
+    setMessages,
+    userName,
+    setUserName
   } = useChat({ onMessageComplete: handleMessageComplete });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -218,6 +220,8 @@ const Index = () => {
               isLoading={isLoading}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
+              userName={userName}
+              onUserNameChange={setUserName}
             />
           </div>
         </div>

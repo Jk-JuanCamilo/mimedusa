@@ -11,9 +11,11 @@ interface ChatInputProps {
   disabled?: boolean;
   selectedModel: string;
   onModelChange: (model: string) => void;
+  userName?: string | null;
+  onUserNameChange?: (name: string | null) => void;
 }
 
-export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelChange }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelChange, userName, onUserNameChange }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,7 +89,12 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
       </div>
 
       {/* Action Buttons */}
-      <ActionButtons onAction={handleActionClick} disabled={isLoading || disabled} />
+      <ActionButtons 
+        onAction={handleActionClick} 
+        disabled={isLoading || disabled}
+        userName={userName}
+        onUserNameChange={onUserNameChange}
+      />
 
       {/* Input Area */}
       <div className="relative flex items-end gap-2 p-4 bg-muted/70 backdrop-blur-md border border-border/50 rounded-xl">
