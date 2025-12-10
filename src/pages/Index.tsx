@@ -27,6 +27,7 @@ const Index = () => {
     createConversation,
     saveMessage,
     deleteConversation,
+    deleteAllConversations,
   } = useConversations();
 
   const conversationIdRef = useRef<string | null>(null);
@@ -112,6 +113,12 @@ const Index = () => {
     }
   };
 
+  const handleDeleteAllConversations = async () => {
+    await deleteAllConversations();
+    clearChat();
+    conversationIdRef.current = null;
+  };
+
   return (
     <div className="flex flex-col h-screen relative">
       {/* Animated Circuit Background - lazy loaded */}
@@ -132,6 +139,7 @@ const Index = () => {
           onSelectConversation={handleSelectConversation}
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
+          onDeleteAllConversations={handleDeleteAllConversations}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />

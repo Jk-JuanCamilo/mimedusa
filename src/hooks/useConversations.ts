@@ -135,6 +135,25 @@ export function useConversations() {
     }
   }, [currentConversationId]);
 
+  const deleteAllConversations = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      setConversations([]);
+      setCurrentConversationId(null);
+      toast.success("Todo el historial ha sido eliminado");
+    } catch (error) {
+      console.error("Error deleting all conversations:", error);
+      toast.error("Error al eliminar el historial");
+    }
+  }, []);
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -166,5 +185,6 @@ export function useConversations() {
     createConversation,
     saveMessage,
     deleteConversation,
+    deleteAllConversations,
   };
 }
