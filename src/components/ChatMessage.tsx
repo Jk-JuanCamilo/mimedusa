@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
-import { Bot, User, Download } from "lucide-react";
+import { Bot, User, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -12,13 +12,21 @@ interface ChatMessageProps {
 export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
   const isUser = role === "user";
 
-  // Detectar bloques de código o contenido editable
-  const hasCodeBlock = content.includes("```");
-  const hasEditableContent = content.includes("---CONTENIDO EDITADO---") || 
-                             content.includes("Aquí está el contenido editado") ||
-                             content.includes("archivo editado") ||
-                             content.includes("contenido corregido") ||
-                             hasCodeBlock;
+  // Detectar tipo de contenido descargable
+  const downloadInfo = useMemo(() => {
+    const hasCodeBlock = content.includes("```");
+    const isWordDocument = content.includes("DOCUMENTO WORD") || 
+                          content.includes("documento editado") ||
+                          content.includes("documento corregido") ||
+                          content.includes("Aquí está tu documento");
+    const hasEditableContent = content.includes("---CONTENIDO EDITADO---") || 
+                               content.includes("Aquí está el contenido editado") ||
+                               content.includes("archivo editado") ||
+                               content.includes("contenido corregido") ||
+                               hasCodeBlock;
+
+    return { hasCodeBlock, isWordDocument, hasEditableContent };
+  }, [content]);
 
   const handleDownload = useCallback(() => {
     let downloadContent = content;
@@ -46,11 +54,26 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
         csv: { ext: "csv", mime: "text/csv" },
         sql: { ext: "sql", mime: "text/x-sql" },
         txt: { ext: "txt", mime: "text/plain" },
+        word: { ext: "txt", mime: "text/plain" },
+        docx: { ext: "txt", mime: "text/plain" },
       };
       
       const extInfo = extMap[extension.toLowerCase()] || { ext: extension, mime: "text/plain" };
-      filename = `archivo_editado.${extInfo.ext}`;
+      
+      // Si es documento Word, usar nombre apropiado
+      if (downloadInfo.isWordDocument) {
+        filename = "documento_editado.txt";
+      } else {
+        filename = `archivo_editado.${extInfo.ext}`;
+      }
       mimeType = extInfo.mime;
+    } else if (downloadInfo.isWordDocument) {
+      // Extraer texto sin formato del contenido
+      downloadContent = content
+        .replace(/\*\*/g, '')
+        .replace(/📄|✏️|📝|✅|📊|🔄|💡|⚠️/g, '')
+        .trim();
+      filename = "documento_editado.txt";
     }
 
     const blob = new Blob([downloadContent], { type: mimeType });
@@ -62,7 +85,7 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [content]);
+  }, [content, downloadInfo.isWordDocument]);
 
   return (
     <div
@@ -93,15 +116,19 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
           {content}
         </div>
-        {!isUser && hasEditableContent && (
+        {!isUser && (downloadInfo.hasEditableContent || downloadInfo.isWordDocument) && (
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleDownload}
             className="mt-2 gap-2"
           >
-            <Download className="w-4 h-4" />
-            Descargar archivo
+            {downloadInfo.isWordDocument ? (
+              <FileText className="w-4 h-4" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {downloadInfo.isWordDocument ? "Descargar documento" : "Descargar archivo"}
           </Button>
         )}
         {imageUrl && (

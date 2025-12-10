@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { ImagePlus, Globe, Code, User, FileUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import mammoth from "mammoth";
 
 interface ActionButtonsProps {
   onAction: (action: string, fileContent?: string) => void;
@@ -67,61 +68,101 @@ export function ActionButtons({ onAction, disabled }: ActionButtonsProps) {
       let content = "";
       let fileType = "texto";
 
-      // Text-based files that can be read directly
-      const textFormats = ['txt', 'csv', 'json', 'xml', 'html', 'css', 'js', 'ts', 'tsx', 'jsx', 'md', 'py', 'java', 'c', 'cpp', 'h', 'sql', 'yaml', 'yml', 'ini', 'cfg', 'log', 'sh', 'bat', 'ps1', 'rb', 'php', 'go', 'rs', 'swift', 'kt', 'scala', 'r', 'lua', 'pl', 'vue', 'svelte', 'astro'];
-      
-      if (textFormats.includes(extension)) {
-        content = await file.text();
-        fileType = extension.toUpperCase();
-      } else {
-        // Try to read as text first for unknown formats
-        try {
-          const textContent = await file.text();
-          // Check if it's readable text (not binary garbage)
-          const isBinary = /[\x00-\x08\x0E-\x1F\x7F-\xFF]/.test(textContent.substring(0, 1000));
-          
-          if (!isBinary && textContent.length > 0) {
-            content = textContent;
-            fileType = extension.toUpperCase() || "TEXTO";
-          } else {
-            // Binary file - provide metadata
-            content = `[ARCHIVO BINARIO DETECTADO]
+      // Handle Word documents (.docx)
+      if (extension === 'docx') {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        content = result.value;
+        fileType = "WORD";
+        
+        const prompt = `📄 **DOCUMENTO WORD CARGADO**: "${file.name}"
+
+**CONTENIDO DEL DOCUMENTO:**
+\`\`\`
+${content.substring(0, 15000)}${content.length > 15000 ? '\n\n[... contenido truncado ...]' : ''}
+\`\`\`
+
+**INSTRUCCIONES**: Analiza este documento Word. Puedo:
+- ✏️ Editar secciones específicas
+- 📝 Reescribir párrafos
+- ✅ Corregir ortografía y gramática
+- 📊 Resumir el contenido
+- 🔄 Reformatear el texto
+
+Cuando realice ediciones, te proporcionaré el documento corregido con un botón para descargarlo.
+
+¿Qué cambios necesitas?`;
+
+        onAction(prompt);
+        toast.success(`Documento Word "${file.name}" analizado correctamente`);
+      } 
+      // Handle .doc files (older Word format)
+      else if (extension === 'doc') {
+        content = `[DOCUMENTO .DOC DETECTADO]
 Nombre: ${file.name}
-Tipo MIME: ${file.type || 'desconocido'}
 Tamaño: ${(file.size / 1024).toFixed(2)} KB
-Extensión: .${extension}
 
-NOTA: Este archivo parece ser binario (${extension}). Puedo ayudarte a:
-- Describir qué tipo de archivo es
-- Sugerir cómo editarlo
-- Crear un nuevo archivo similar
-- Proporcionar instrucciones de edición
+⚠️ El formato .doc (Word antiguo) no puede leerse directamente en el navegador.
+💡 **Solución**: Guarda el archivo como .docx en Word y vuelve a subirlo.`;
+        fileType = "DOC";
+        onAction(content);
+        toast.warning("Convierte el archivo a .docx para poder analizarlo");
+      }
+      // Text-based files
+      else {
+        const textFormats = ['txt', 'csv', 'json', 'xml', 'html', 'css', 'js', 'ts', 'tsx', 'jsx', 'md', 'py', 'java', 'c', 'cpp', 'h', 'sql', 'yaml', 'yml', 'ini', 'cfg', 'log', 'sh', 'bat', 'ps1', 'rb', 'php', 'go', 'rs', 'swift', 'kt', 'scala', 'r', 'lua', 'pl', 'vue', 'svelte', 'astro'];
+        
+        if (textFormats.includes(extension)) {
+          content = await file.text();
+          fileType = extension.toUpperCase();
+          
+          const truncatedContent = content.length > 15000 
+            ? content.substring(0, 15000) + `\n\n[... contenido truncado (${content.length} caracteres totales) ...]` 
+            : content;
 
-Por favor, describe qué cambios necesitas hacer en este archivo.`;
-            fileType = "BINARIO";
-          }
-        } catch {
-          content = `[ARCHIVO: ${file.name}]
+          const prompt = `📄 **ARCHIVO ${fileType} CARGADO**: "${file.name}"
+
+\`\`\`${extension}
+${truncatedContent}
+\`\`\`
+
+Puedo editar este archivo. ¿Qué cambios necesitas?`;
+
+          onAction(prompt);
+          toast.success(`Archivo "${file.name}" cargado correctamente`);
+        } else {
+          // Try to read as text for unknown formats
+          try {
+            const textContent = await file.text();
+            const isBinary = /[\x00-\x08\x0E-\x1F\x7F-\xFF]/.test(textContent.substring(0, 1000));
+            
+            if (!isBinary && textContent.length > 0) {
+              content = textContent;
+              fileType = extension.toUpperCase() || "TEXTO";
+              
+              const truncatedContent = content.length > 15000 
+                ? content.substring(0, 15000) + `\n\n[... contenido truncado ...]` 
+                : content;
+
+              onAction(`He subido el archivo "${file.name}" (${fileType}):\n\n\`\`\`\n${truncatedContent}\n\`\`\`\n\n¿Qué te gustaría que edite?`);
+              toast.success(`Archivo "${file.name}" cargado`);
+            } else {
+              onAction(`[ARCHIVO BINARIO: ${file.name}]
 Tipo: ${file.type || 'desconocido'}
 Tamaño: ${(file.size / 1024).toFixed(2)} KB
 
-Por favor describe qué te gustaría hacer con este archivo.`;
-          fileType = "DESCONOCIDO";
+Este archivo es binario y no puedo leer su contenido directamente. Describe qué necesitas hacer con él.`);
+              toast.info("Archivo binario detectado");
+            }
+          } catch {
+            onAction(`[ARCHIVO: ${file.name}]
+Tipo: ${file.type || 'desconocido'}
+Tamaño: ${(file.size / 1024).toFixed(2)} KB
+
+Describe qué necesitas hacer con este archivo.`);
+          }
         }
       }
-
-      // Truncate very long content but keep more for better context
-      const maxLength = 15000;
-      const truncatedContent = content.length > maxLength 
-        ? content.substring(0, maxLength) + `\n\n[... contenido truncado (${content.length} caracteres totales) ...]` 
-        : content;
-
-      const prompt = fileType === "BINARIO" || fileType === "DESCONOCIDO"
-        ? `He subido el archivo "${file.name}":\n\n${truncatedContent}`
-        : `He subido el archivo "${file.name}" (${fileType}):\n\n\`\`\`${extension}\n${truncatedContent}\n\`\`\`\n\n¿Qué te gustaría que edite o modifique en este archivo?`;
-
-      onAction(prompt);
-      toast.success(`Archivo "${file.name}" cargado correctamente`);
     } catch (error) {
       console.error("Error reading file:", error);
       toast.error("Error al leer el archivo");
