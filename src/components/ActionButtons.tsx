@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ImagePlus, Globe, Code, User, FileUp, Loader2 } from "lucide-react";
+import { ImagePlus, Code, User, FileUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
@@ -24,12 +24,6 @@ const actions = [
     label: "Generar Imagen",
     icon: ImagePlus,
     prompt: "Genera una imagen de un atardecer en la playa con palmeras y colores vibrantes"
-  },
-  {
-    id: "web",
-    label: "Búsqueda Web",
-    icon: Globe,
-    prompt: "Busca información sobre "
   },
   {
     id: "code",
