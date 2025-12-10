@@ -34,6 +34,14 @@ const templateOptions = [
   { value: "certificate", label: "🏆 Certificado", description: "Diplomas y reconocimientos" },
   { value: "nda", label: "🔒 NDA", description: "Acuerdo de confidencialidad" },
   { value: "report", label: "📊 Reporte/Informe", description: "Informes profesionales" },
+  { value: "receipt", label: "🧾 Recibo", description: "Recibos de pago y comprobantes" },
+  { value: "memo", label: "📝 Memorando", description: "Comunicaciones internas empresariales" },
+  { value: "minutes", label: "📋 Acta", description: "Actas de reunión y asambleas" },
+  { value: "tutela", label: "⚖️ Tutela", description: "Acción de tutela para protección de derechos" },
+  { value: "lawsuit", label: "⚖️ Demanda", description: "Demandas civiles y laborales" },
+  { value: "petition", label: "📄 Derecho de Petición", description: "Solicitudes formales a entidades" },
+  { value: "pqr", label: "📨 PQR", description: "Peticiones, quejas y reclamos" },
+  { value: "complaint", label: "📢 Queja", description: "Quejas formales ante autoridades" },
 ];
 
 export function PDFGeneratorDialog({ disabled }: PDFGeneratorDialogProps) {

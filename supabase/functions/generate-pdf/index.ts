@@ -46,6 +46,46 @@ const templates: Record<string, { title: string; systemPrompt: string; sections:
     title: "Reporte/Informe",
     systemPrompt: `Eres un experto en redacción de informes profesionales. Genera un informe estructurado basado en la descripción del usuario. Debe ser claro, objetivo y bien organizado. Responde SOLO con el contenido del informe.`,
     sections: ["Título", "Resumen Ejecutivo", "Introducción", "Desarrollo", "Resultados", "Conclusiones", "Recomendaciones"]
+  },
+  receipt: {
+    title: "Recibo",
+    systemPrompt: `Eres un experto en documentos comerciales. Genera un recibo de pago profesional basado en la descripción del usuario. Incluye datos del pagador, receptor, concepto, monto, fecha y forma de pago. Responde SOLO con el contenido del recibo estructurado.`,
+    sections: ["Número de Recibo", "Fecha", "Receptor", "Pagador", "Concepto", "Monto", "Forma de Pago", "Firma"]
+  },
+  memo: {
+    title: "Memorando",
+    systemPrompt: `Eres un experto en comunicación corporativa. Genera un memorando profesional basado en la descripción del usuario. Debe ser claro, directo y con formato empresarial estándar. Responde SOLO con el contenido del memorando.`,
+    sections: ["Para", "De", "Fecha", "Asunto", "Cuerpo", "Anexos", "Firma"]
+  },
+  minutes: {
+    title: "Acta",
+    systemPrompt: `Eres un experto en documentación corporativa. Genera un acta de reunión profesional basada en la descripción del usuario. Debe incluir todos los puntos tratados, decisiones tomadas y compromisos. Responde SOLO con el contenido del acta estructurada.`,
+    sections: ["Fecha y Hora", "Lugar", "Asistentes", "Orden del Día", "Desarrollo", "Acuerdos", "Compromisos", "Firmas"]
+  },
+  tutela: {
+    title: "Acción de Tutela",
+    systemPrompt: `Eres un experto en derecho constitucional colombiano. Genera una acción de tutela profesional basada en la descripción del usuario. Debe incluir los hechos, derechos vulnerados, pretensiones y fundamentos jurídicos según la legislación colombiana. Responde SOLO con el contenido de la tutela estructurada.`,
+    sections: ["Accionante", "Accionado", "Hechos", "Derechos Fundamentales Vulnerados", "Pretensiones", "Fundamentos Jurídicos", "Pruebas", "Notificaciones", "Firma"]
+  },
+  lawsuit: {
+    title: "Demanda",
+    systemPrompt: `Eres un experto en derecho procesal. Genera una demanda profesional basada en la descripción del usuario. Debe incluir identificación de las partes, hechos, pretensiones, fundamentos de derecho y pruebas según normativa legal. Responde SOLO con el contenido de la demanda estructurada.`,
+    sections: ["Demandante", "Demandado", "Pretensiones", "Hechos", "Fundamentos de Derecho", "Pruebas", "Cuantía", "Competencia", "Notificaciones", "Firma"]
+  },
+  petition: {
+    title: "Derecho de Petición",
+    systemPrompt: `Eres un experto en derecho administrativo colombiano. Genera un derecho de petición profesional basado en la descripción del usuario. Debe ser claro, respetuoso y fundamentado en el artículo 23 de la Constitución Política. Responde SOLO con el contenido del derecho de petición estructurado.`,
+    sections: ["Destinatario", "Peticionario", "Asunto", "Hechos", "Petición", "Fundamentos", "Notificaciones", "Firma"]
+  },
+  pqr: {
+    title: "PQR (Petición, Queja o Reclamo)",
+    systemPrompt: `Eres un experto en atención al ciudadano y derechos del consumidor. Genera un PQR profesional basado en la descripción del usuario. Debe ser claro, con hechos concretos y la solicitud específica. Responde SOLO con el contenido del PQR estructurado.`,
+    sections: ["Tipo (Petición/Queja/Reclamo)", "Entidad Destinataria", "Datos del Ciudadano", "Asunto", "Hechos", "Solicitud", "Fundamentos", "Anexos", "Firma"]
+  },
+  complaint: {
+    title: "Queja Formal",
+    systemPrompt: `Eres un experto en derecho y procedimientos de queja. Genera una queja formal profesional basada en la descripción del usuario. Debe incluir los hechos detallados, la normativa vulnerada y la solicitud específica. Responde SOLO con el contenido de la queja estructurada.`,
+    sections: ["Autoridad Destinataria", "Quejoso", "Querellado", "Hechos", "Normativa Vulnerada", "Pruebas", "Solicitud", "Notificaciones", "Firma"]
   }
 };
 
