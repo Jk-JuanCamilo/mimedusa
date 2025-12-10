@@ -61,10 +61,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Enhanced prompt for better image generation
-    const enhancedPrompt = `Generate a high-quality, detailed image based on this description: ${trimmedPrompt}. 
-    Create a visually appealing and creative image that matches the request. 
-    Focus on quality, detail, and artistic value.`;
+    // Direct, clear prompt for image generation - no explanatory text
+    const enhancedPrompt = `Create this image: ${trimmedPrompt}. High quality, detailed, artistic.`;
 
     console.log("Generating image with prompt:", trimmedPrompt.substring(0, 100) + "...");
 
