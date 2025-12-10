@@ -65,6 +65,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [importedCsvData, setImportedCsvData] = useState<unknown[][] | null>(null);
   const [csvFileName, setCsvFileName] = useState<string>("");
+  const [includeCharts, setIncludeCharts] = useState(true);
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   const handleClose = () => {
@@ -242,7 +243,8 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
           templateType, 
           description, 
           customTitle: customTitle.trim() || undefined,
-          importedData: csvDataString || undefined
+          importedData: csvDataString || undefined,
+          includeCharts
         }
       });
 
@@ -623,6 +625,21 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                   Seleccionar archivo CSV
                 </Button>
               )}
+            </div>
+
+            {/* Chart option */}
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="include-charts" 
+                checked={includeCharts}
+                onCheckedChange={(checked) => setIncludeCharts(checked === true)}
+              />
+              <label 
+                htmlFor="include-charts" 
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
+                📊 Incluir hoja de gráficos con resumen visual
+              </label>
             </div>
 
             {isAuthenticated && onSaveToHistory && (
