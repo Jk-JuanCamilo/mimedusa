@@ -230,7 +230,6 @@ export function ImageEditorDialog({ disabled, isAuthenticated, userId }: ImageEd
       <DialogContent className="bg-card border-border max-w-lg overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center justify-center gap-1">
-            <MiniJellyfish side="left" />
             <div className="flex items-center gap-1 animate-float-title">
               <AnimatedSparkle delay={0} />
               <span className="text-xl font-bold bg-gradient-to-r from-primary via-purple-400 to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-shift">
@@ -238,7 +237,6 @@ export function ImageEditorDialog({ disabled, isAuthenticated, userId }: ImageEd
               </span>
               <AnimatedSparkle delay={0.5} />
             </div>
-            <MiniJellyfish side="right" />
           </DialogTitle>
         </DialogHeader>
 
