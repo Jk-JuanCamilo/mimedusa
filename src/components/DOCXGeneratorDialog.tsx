@@ -581,9 +581,11 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                     ))}
                   </SelectContent>
                 </Select>
-                <BorderPreview borderStyle={borderStyle} />
               </div>
             </div>
+
+            {/* Vista previa centrada */}
+            <BorderPreview borderStyle={borderStyle} />
 
             {isAuthenticated && onSaveToHistory && (
               <div className="flex items-center space-x-2">
