@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SpeechTextarea } from "@/components/ui/speech-textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -380,7 +381,7 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
               <label className="text-sm text-muted-foreground">
                 Describe qué necesitas en el documento
               </label>
-              <Textarea
+              <SpeechTextarea
                 placeholder={
                   templateType === "contract" ? "Ej: Un contrato de arrendamiento para un apartamento en Bogotá, por 12 meses, con precio de $1,500,000 mensuales..."
                   : templateType === "invoice" ? "Ej: Factura para empresa XYZ, por servicios de diseño web, valor $2,000,000..."
@@ -388,9 +389,8 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
                   : "Describe los detalles específicos que necesitas incluir..."
                 }
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={setDescription}
                 className="bg-background/50 border-border min-h-[120px]"
-                maxLength={5000}
               />
               <p className="text-xs text-muted-foreground text-right">
                 {description.length}/5000 caracteres
