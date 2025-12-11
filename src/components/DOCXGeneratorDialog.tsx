@@ -25,6 +25,17 @@ interface PreviewData {
   filename: string;
 }
 
+type BorderStyleOption = "double-black" | "single-black" | "thick-black" | "double-purple" | "elegant" | "none";
+
+const borderOptions: { value: BorderStyleOption; label: string; description: string }[] = [
+  { value: "double-black", label: "Doble Negro", description: "Borde doble elegante en negro" },
+  { value: "single-black", label: "Simple Negro", description: "Línea simple en negro" },
+  { value: "thick-black", label: "Grueso Negro", description: "Borde grueso y prominente" },
+  { value: "double-purple", label: "Doble Morado", description: "Borde doble en morado" },
+  { value: "elegant", label: "Elegante", description: "Diseño fino y sofisticado" },
+  { value: "none", label: "Sin Borde", description: "Documento sin bordes de página" },
+];
+
 const templateOptions = [
   { value: "business-letter", label: "Carta Empresarial", description: "Carta formal con membrete profesional" },
   { value: "resume", label: "Hoja de Vida", description: "CV profesional y moderno" },
@@ -60,6 +71,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   const [templateType, setTemplateType] = useState("");
   const [description, setDescription] = useState("");
   const [customTitle, setCustomTitle] = useState("");
+  const [borderStyle, setBorderStyle] = useState<BorderStyleOption>("double-black");
   const [isGenerating, setIsGenerating] = useState(false);
   const [saveToHistory, setSaveToHistory] = useState(false);
   const [preview, setPreview] = useState<PreviewData | null>(null);
@@ -74,7 +86,44 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
     setEditedContent("");
   };
 
-  const createDocxFromContent = async (content: string, title: string): Promise<Blob> => {
+  const getBorderConfig = (style: BorderStyleOption) => {
+    const configs = {
+      "double-black": {
+        style: BorderStyle.DOUBLE,
+        size: 12,
+        color: "000000",
+        space: 24,
+      },
+      "single-black": {
+        style: BorderStyle.SINGLE,
+        size: 8,
+        color: "000000",
+        space: 24,
+      },
+      "thick-black": {
+        style: BorderStyle.THICK,
+        size: 18,
+        color: "000000",
+        space: 24,
+      },
+      "double-purple": {
+        style: BorderStyle.DOUBLE,
+        size: 12,
+        color: "6B46C1",
+        space: 24,
+      },
+      "elegant": {
+        style: BorderStyle.SINGLE,
+        size: 4,
+        color: "4A5568",
+        space: 24,
+      },
+      "none": null,
+    };
+    return configs[style];
+  };
+
+  const createDocxFromContent = async (content: string, title: string, selectedBorder: BorderStyleOption): Promise<Blob> => {
     const lines = content.split('\n');
     const children: Paragraph[] = [];
 
@@ -232,38 +281,20 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
       })
     );
 
+    const borderConfig = getBorderConfig(selectedBorder);
+    
     const doc = new Document({
       sections: [
         {
           properties: {
-            page: {
+            page: borderConfig ? {
               borders: {
-                pageBorderBottom: {
-                  style: BorderStyle.DOUBLE,
-                  size: 12,
-                  color: "6B46C1",
-                  space: 24,
-                },
-                pageBorderLeft: {
-                  style: BorderStyle.DOUBLE,
-                  size: 12,
-                  color: "6B46C1",
-                  space: 24,
-                },
-                pageBorderRight: {
-                  style: BorderStyle.DOUBLE,
-                  size: 12,
-                  color: "6B46C1",
-                  space: 24,
-                },
-                pageBorderTop: {
-                  style: BorderStyle.DOUBLE,
-                  size: 12,
-                  color: "6B46C1",
-                  space: 24,
-                },
+                pageBorderBottom: borderConfig,
+                pageBorderLeft: borderConfig,
+                pageBorderRight: borderConfig,
+                pageBorderTop: borderConfig,
               },
-            },
+            } : {},
           },
           children,
         },
@@ -298,7 +329,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
 
       const title = data.title || "Documento";
       const content = data.content;
-      const docxBlob = await createDocxFromContent(content, title);
+      const docxBlob = await createDocxFromContent(content, title, borderStyle);
       const filename = `${title.replace(/\s+/g, '_')}_${Date.now()}.docx`;
 
       setPreview({ docxBlob, content, title, filename });
@@ -359,7 +390,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
     if (!preview) return;
 
     try {
-      const docxBlob = await createDocxFromContent(editedContent, preview.title);
+      const docxBlob = await createDocxFromContent(editedContent, preview.title, borderStyle);
       setPreview({ ...preview, docxBlob, content: editedContent });
       setIsEditing(false);
 
@@ -428,13 +459,34 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Título Personalizado (opcional)</Label>
-              <Input
-                value={customTitle}
-                onChange={(e) => setCustomTitle(e.target.value)}
-                placeholder="Ej: Carta de Renuncia - Juan Pérez"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Título Personalizado (opcional)</Label>
+                <Input
+                  value={customTitle}
+                  onChange={(e) => setCustomTitle(e.target.value)}
+                  placeholder="Ej: Carta de Renuncia - Juan Pérez"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Estilo de Borde</Label>
+                <Select value={borderStyle} onValueChange={(v) => setBorderStyle(v as BorderStyleOption)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un borde" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {borderOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{option.label}</span>
+                          <span className="text-xs text-muted-foreground">{option.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {isAuthenticated && onSaveToHistory && (
