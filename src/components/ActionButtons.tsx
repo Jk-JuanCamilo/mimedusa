@@ -12,6 +12,7 @@ import { ImagePlus, User, Trash2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { PDFGeneratorDialog } from "./PDFGeneratorDialog";
 import { XLSXGeneratorDialog } from "./XLSXGeneratorDialog";
+import { DOCXGeneratorDialog } from "./DOCXGeneratorDialog";
 import { ImageEditorDialog } from "./ImageEditorDialog";
 
 interface ActionButtonsProps {
@@ -139,6 +140,13 @@ export function ActionButtons({ onAction, disabled, userName, onUserNameChange, 
 
       {/* XLSX Generator */}
       <XLSXGeneratorDialog 
+        disabled={disabled} 
+        onSaveToHistory={onSaveToHistory}
+        isAuthenticated={isAuthenticated}
+      />
+
+      {/* DOCX Generator */}
+      <DOCXGeneratorDialog 
         disabled={disabled} 
         onSaveToHistory={onSaveToHistory}
         isAuthenticated={isAuthenticated}
