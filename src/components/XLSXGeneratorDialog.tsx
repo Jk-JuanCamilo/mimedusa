@@ -77,60 +77,104 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
     setCsvFileName("");
   };
 
-  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const [isDragging, setIsDragging] = useState(false);
+
+  const processFile = async (file: File) => {
+    const fileName = file.name.toLowerCase();
+    const isCsv = fileName.endsWith('.csv');
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
 
     try {
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-      const data: unknown[][] = [];
+      if (isCsv) {
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        const data: unknown[][] = [];
 
-      for (const line of lines) {
-        // Handle CSV with proper parsing (respecting quoted values)
-        const cells: string[] = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            cells.push(current.trim());
-            current = '';
-          } else {
-            current += char;
+        for (const line of lines) {
+          const cells: string[] = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              cells.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          cells.push(current.trim());
+
+          const parsedCells = cells.map(cell => {
+            const cleanCell = cell.replace(/^"|"$/g, '');
+            const num = parseFloat(cleanCell.replace(/[,$%]/g, ''));
+            return isNaN(num) || cleanCell === '' ? cleanCell : num;
+          });
+          
+          if (parsedCells.some(cell => cell !== '')) {
+            data.push(parsedCells);
           }
         }
-        cells.push(current.trim());
 
-        // Convert numeric values
-        const parsedCells = cells.map(cell => {
-          const cleanCell = cell.replace(/^"|"$/g, '');
-          const num = parseFloat(cleanCell.replace(/[,$%]/g, ''));
-          return isNaN(num) || cleanCell === '' ? cleanCell : num;
-        });
-        
-        if (parsedCells.some(cell => cell !== '')) {
-          data.push(parsedCells);
+        if (data.length > 0) {
+          setImportedCsvData(data);
+          setCsvFileName(file.name);
+          toast.success(`CSV "${file.name}" importado con ${data.length} filas`);
+        } else {
+          toast.error("No se encontraron datos en el archivo CSV");
         }
-      }
-
-      if (data.length > 0) {
-        setImportedCsvData(data);
-        setCsvFileName(file.name);
-        toast.success(`CSV "${file.name}" importado con ${data.length} filas`);
+      } else if (isExcel) {
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
+        
+        if (data.length > 0) {
+          setImportedCsvData(data);
+          setCsvFileName(file.name);
+          toast.success(`Excel "${file.name}" importado con ${data.length} filas`);
+        } else {
+          toast.error("No se encontraron datos en el archivo Excel");
+        }
       } else {
-        toast.error("No se encontraron datos en el archivo CSV");
+        toast.error("Solo se aceptan archivos CSV o Excel (.xlsx, .xls)");
       }
     } catch (error) {
-      console.error("Error importing CSV:", error);
-      toast.error("Error al importar el archivo CSV");
+      console.error("Error importing file:", error);
+      toast.error("Error al importar el archivo");
     }
+  };
 
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await processFile(file);
+    }
     if (csvInputRef.current) {
       csvInputRef.current.value = '';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      await processFile(file);
     }
   };
 
@@ -562,16 +606,16 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
               </p>
             </div>
 
-            {/* CSV Import Section */}
+            {/* File Import Section */}
             <div className="space-y-2">
               <label className="text-sm text-muted-foreground">
-                Importar datos desde CSV (opcional)
+                Importar datos desde CSV o Excel (opcional)
               </label>
               <input
                 ref={csvInputRef}
                 type="file"
-                accept=".csv"
-                onChange={handleCsvImport}
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileImport}
                 className="hidden"
               />
               {importedCsvData ? (
@@ -616,14 +660,25 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                   </div>
                 </div>
               ) : (
-                <Button
-                  variant="outline"
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer ${
+                    isDragging 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50 hover:bg-muted/30'
+                  }`}
                   onClick={() => csvInputRef.current?.click()}
-                  className="w-full flex items-center gap-2"
                 >
-                  <Upload className="w-4 h-4" />
-                  Seleccionar archivo CSV
-                </Button>
+                  <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Arrastra CSV o Excel aquí
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    o haz clic para seleccionar
+                  </p>
+                </div>
               )}
             </div>
 
