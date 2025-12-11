@@ -610,7 +610,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                 }
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-background/50 border-border min-h-[80px]"
+                className="bg-background/50 border-border min-h-[60px]"
                 maxLength={5000}
               />
               <p className="text-xs text-muted-foreground text-right">
