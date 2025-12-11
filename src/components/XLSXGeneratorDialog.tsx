@@ -454,7 +454,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
           <span className="text-xs">Generar Excel</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className={`bg-card border-border max-h-[85vh] overflow-hidden ${preview ? 'max-w-3xl' : 'max-w-xl w-[95vw]'}`}>
+      <DialogContent className={`bg-card border-border ${preview ? 'max-w-4xl h-[90vh]' : 'max-w-lg'}`}>
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
             {preview ? (
