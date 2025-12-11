@@ -27,14 +27,50 @@ interface PreviewData {
 
 type BorderStyleOption = "double-black" | "single-black" | "thick-black" | "double-purple" | "elegant" | "none";
 
-const borderOptions: { value: BorderStyleOption; label: string; description: string }[] = [
-  { value: "double-black", label: "Doble Negro", description: "Borde doble elegante en negro" },
-  { value: "single-black", label: "Simple Negro", description: "Línea simple en negro" },
-  { value: "thick-black", label: "Grueso Negro", description: "Borde grueso y prominente" },
-  { value: "double-purple", label: "Doble Morado", description: "Borde doble en morado" },
-  { value: "elegant", label: "Elegante", description: "Diseño fino y sofisticado" },
-  { value: "none", label: "Sin Borde", description: "Documento sin bordes de página" },
+const borderOptions: { value: BorderStyleOption; label: string; description: string; preview: { style: string; color: string } }[] = [
+  { value: "double-black", label: "Doble Negro", description: "Borde doble elegante en negro", preview: { style: "double", color: "#000000" } },
+  { value: "single-black", label: "Simple Negro", description: "Línea simple en negro", preview: { style: "solid", color: "#000000" } },
+  { value: "thick-black", label: "Grueso Negro", description: "Borde grueso y prominente", preview: { style: "solid 4px", color: "#000000" } },
+  { value: "double-purple", label: "Doble Morado", description: "Borde doble en morado", preview: { style: "double", color: "#6B46C1" } },
+  { value: "elegant", label: "Elegante", description: "Diseño fino y sofisticado", preview: { style: "solid 1px", color: "#4A5568" } },
+  { value: "none", label: "Sin Borde", description: "Documento sin bordes de página", preview: { style: "none", color: "transparent" } },
 ];
+
+function BorderPreview({ borderStyle }: { borderStyle: BorderStyleOption }) {
+  const option = borderOptions.find(o => o.value === borderStyle);
+  if (!option) return null;
+
+  const getBorderCSS = () => {
+    switch (borderStyle) {
+      case "double-black":
+        return "border-[3px] border-double border-black";
+      case "single-black":
+        return "border-2 border-solid border-black";
+      case "thick-black":
+        return "border-4 border-solid border-black";
+      case "double-purple":
+        return "border-[3px] border-double border-purple-600";
+      case "elegant":
+        return "border border-solid border-gray-600";
+      case "none":
+        return "border border-dashed border-muted-foreground/30";
+      default:
+        return "";
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs text-muted-foreground">Vista previa del borde</Label>
+      <div className={`w-full h-24 bg-background rounded ${getBorderCSS()} flex items-center justify-center`}>
+        <div className="text-center p-2">
+          <p className="text-xs font-medium text-foreground">{option.label}</p>
+          <p className="text-[10px] text-muted-foreground">{option.description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const templateOptions = [
   { value: "business-letter", label: "Carta Empresarial", description: "Carta formal con membrete profesional" },
@@ -486,6 +522,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                     ))}
                   </SelectContent>
                 </Select>
+                <BorderPreview borderStyle={borderStyle} />
               </div>
             </div>
 
