@@ -60,7 +60,7 @@ serve(async (req) => {
       if (canEdit === false) {
         console.log("Rate limit exceeded for userId:", userId);
         return new Response(JSON.stringify({ 
-          error: "Has alcanzado el límite de 2 ediciones por 3 horas. Por favor espera antes de intentar de nuevo." 
+          error: "Has alcanzado el límite de 3 ediciones por hora. Por favor espera antes de intentar de nuevo." 
         }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
