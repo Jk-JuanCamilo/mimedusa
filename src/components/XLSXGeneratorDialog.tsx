@@ -78,13 +78,24 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   };
 
   const [isDragging, setIsDragging] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const processFile = async (file: File) => {
     const fileName = file.name.toLowerCase();
     const isCsv = fileName.endsWith('.csv');
     const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
 
+    if (!isCsv && !isExcel) {
+      toast.error("Solo se aceptan archivos CSV o Excel (.xlsx, .xls)");
+      return;
+    }
+
+    setIsImporting(true);
+
     try {
+      // Use setTimeout to allow UI to update before heavy processing
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       if (isCsv) {
         const text = await file.text();
         const lines = text.split('\n').filter(line => line.trim());
@@ -140,12 +151,12 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
         } else {
           toast.error("No se encontraron datos en el archivo Excel");
         }
-      } else {
-        toast.error("Solo se aceptan archivos CSV o Excel (.xlsx, .xls)");
       }
     } catch (error) {
       console.error("Error importing file:", error);
       toast.error("Error al importar el archivo");
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -658,6 +669,16 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                       </p>
                     )}
                   </div>
+                </div>
+              ) : isImporting ? (
+                <div className="border-2 border-dashed border-primary rounded-lg p-6 text-center bg-primary/5">
+                  <Loader2 className="w-8 h-8 mx-auto mb-2 text-primary animate-spin" />
+                  <p className="text-sm text-foreground font-medium">
+                    Importando archivo...
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Procesando datos
+                  </p>
                 </div>
               ) : (
                 <div
