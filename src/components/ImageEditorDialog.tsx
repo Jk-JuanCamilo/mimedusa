@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Wand2, Loader2, Download, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Wand2, Loader2, Download, X, Image as ImageIcon, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,6 +19,73 @@ interface ImageEditorDialogProps {
 }
 
 const ACCEPTED_FORMATS = "image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff,image/svg+xml,image/heic,image/heif";
+
+// Mini jellyfish component for the dialog
+function MiniJellyfish({ side }: { side: 'left' | 'right' }) {
+  return (
+    <svg 
+      viewBox="0 0 50 60" 
+      className={`w-8 h-10 animate-float-slow ${side === 'left' ? 'mr-2' : 'ml-2'}`}
+      style={{ 
+        animationDelay: side === 'left' ? '0s' : '0.5s',
+        filter: 'drop-shadow(0 0 4px hsl(var(--primary) / 0.5))'
+      }}
+    >
+      {/* Jellyfish body */}
+      <ellipse cx="25" cy="15" rx="18" ry="12" fill="hsl(var(--primary) / 0.7)" />
+      <ellipse cx="25" cy="15" rx="14" ry="9" fill="hsl(var(--primary) / 0.4)" />
+      
+      {/* Tentacles */}
+      <path 
+        d="M12 20 Q10 35 14 50" 
+        stroke="hsl(var(--primary) / 0.6)" 
+        strokeWidth="2" 
+        fill="none"
+        className="animate-tentacle"
+      />
+      <path 
+        d="M20 22 Q18 40 22 55" 
+        stroke="hsl(var(--primary) / 0.5)" 
+        strokeWidth="2" 
+        fill="none"
+        className="animate-tentacle"
+        style={{ animationDelay: '0.2s' }}
+      />
+      <path 
+        d="M30 22 Q32 40 28 55" 
+        stroke="hsl(var(--primary) / 0.5)" 
+        strokeWidth="2" 
+        fill="none"
+        className="animate-tentacle"
+        style={{ animationDelay: '0.4s' }}
+      />
+      <path 
+        d="M38 20 Q40 35 36 50" 
+        stroke="hsl(var(--primary) / 0.6)" 
+        strokeWidth="2" 
+        fill="none"
+        className="animate-tentacle"
+        style={{ animationDelay: '0.3s' }}
+      />
+      
+      {/* Glow effect */}
+      <ellipse cx="25" cy="15" rx="10" ry="6" fill="hsl(var(--primary) / 0.3)" />
+    </svg>
+  );
+}
+
+// Sparkle animation component
+function AnimatedSparkle({ delay = 0 }: { delay?: number }) {
+  return (
+    <Sparkles 
+      className="w-4 h-4 text-primary animate-sparkle" 
+      style={{ 
+        animationDelay: `${delay}s`,
+        filter: 'drop-shadow(0 0 3px hsl(var(--primary)))'
+      }} 
+    />
+  );
+}
 
 export function ImageEditorDialog({ disabled, isAuthenticated, userId }: ImageEditorDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -160,11 +227,18 @@ export function ImageEditorDialog({ disabled, isAuthenticated, userId }: ImageEd
           <span className="text-xs">Editar Imagen</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-border max-w-lg">
+      <DialogContent className="bg-card border-border max-w-lg overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="text-foreground flex items-center gap-2">
-            <Wand2 className="w-5 h-5" />
-            Editar Imagen con IA
+          <DialogTitle className="text-foreground flex items-center justify-center gap-1">
+            <MiniJellyfish side="left" />
+            <div className="flex items-center gap-1 animate-float-title">
+              <AnimatedSparkle delay={0} />
+              <span className="text-xl font-bold bg-gradient-to-r from-primary via-purple-400 to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-shift">
+                Medussa IA Edita
+              </span>
+              <AnimatedSparkle delay={0.5} />
+            </div>
+            <MiniJellyfish side="right" />
           </DialogTitle>
         </DialogHeader>
 
