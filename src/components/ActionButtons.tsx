@@ -14,6 +14,7 @@ import mammoth from "mammoth";
 import * as XLSX from "xlsx";
 import { PDFGeneratorDialog } from "./PDFGeneratorDialog";
 import { XLSXGeneratorDialog } from "./XLSXGeneratorDialog";
+import { ImageEditorDialog } from "./ImageEditorDialog";
 
 interface ActionButtonsProps {
   onAction: (action: string, fileContent?: string) => void;
@@ -22,6 +23,7 @@ interface ActionButtonsProps {
   onUserNameChange?: (name: string | null) => void;
   onSaveToHistory?: (userMessage: string, assistantMessage: string) => Promise<void>;
   isAuthenticated?: boolean;
+  userId?: string;
 }
 
 const actions = [
@@ -33,7 +35,7 @@ const actions = [
   },
 ];
 
-export function ActionButtons({ onAction, disabled, userName, onUserNameChange, onSaveToHistory, isAuthenticated }: ActionButtonsProps) {
+export function ActionButtons({ onAction, disabled, userName, onUserNameChange, onSaveToHistory, isAuthenticated, userId }: ActionButtonsProps) {
   const [name, setName] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -361,6 +363,13 @@ Describe qué necesitas hacer con este archivo.`);
         disabled={disabled} 
         onSaveToHistory={onSaveToHistory}
         isAuthenticated={isAuthenticated}
+      />
+
+      {/* Image Editor */}
+      <ImageEditorDialog
+        disabled={disabled}
+        isAuthenticated={isAuthenticated}
+        userId={userId}
       />
 
       {/* File Upload Button */}

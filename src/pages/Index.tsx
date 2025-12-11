@@ -17,7 +17,7 @@ const CircuitBackground = lazy(() => import("@/components/CircuitBackground").th
 const FloatingJellyfish = lazy(() => import("@/components/FloatingJellyfish").then(m => ({ default: m.FloatingJellyfish })));
 
 const Index = () => {
-  const [user, setUser] = useState<boolean>(false);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const {
@@ -76,12 +76,12 @@ const Index = () => {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      setUser(!!authUser);
+      setUser(authUser ? { id: authUser.id } : null);
     };
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(!!session?.user);
+      setUser(session?.user ? { id: session.user.id } : null);
     });
 
     return () => subscription.unsubscribe();
@@ -250,7 +250,8 @@ const Index = () => {
               userName={userName}
               onUserNameChange={setUserName}
               onSaveToHistory={handleSaveToHistory}
-              isAuthenticated={user}
+              isAuthenticated={!!user}
+              userId={user?.id}
             />
           </div>
         </div>
