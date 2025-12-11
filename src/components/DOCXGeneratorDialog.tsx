@@ -501,7 +501,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
           Generar Word
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white via-white to-purple-50 dark:from-background dark:via-background dark:to-purple-950/20">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
@@ -556,7 +556,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un borde" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
                     {borderOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         <div className="flex flex-col">
