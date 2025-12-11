@@ -42,19 +42,16 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          ip_address: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
-          ip_address: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
-          ip_address?: string
           user_id?: string | null
         }
         Relationships: []
@@ -99,10 +96,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_image_edit_rate_limit: {
-        Args: { p_ip_address: string; p_user_id: string }
-        Returns: boolean
-      }
+      check_image_edit_rate_limit:
+        | { Args: { p_user_id: string }; Returns: boolean }
+        | {
+            Args: { p_ip_address: string; p_user_id: string }
+            Returns: boolean
+          }
     }
     Enums: {
       [_ in never]: never

@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-forwarded-for, x-real-ip",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const MAX_PROMPT_LENGTH = 1000;
@@ -17,12 +17,7 @@ serve(async (req) => {
     const body = await req.json();
     const { prompt, imageData, userId } = body;
 
-    // Get IP address from headers
-    const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() 
-      || req.headers.get("x-real-ip") 
-      || "unknown";
-
-    console.log("edit-image: Request received, IP:", ipAddress, "userId:", userId || "anonymous");
+    console.log("edit-image: Request received, userId:", userId || "anonymous");
 
     // Validate inputs
     if (!prompt || typeof prompt !== "string") {
@@ -51,24 +46,26 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check rate limit (2 edits per 3 hours)
-    const { data: canEdit, error: rateLimitError } = await supabase.rpc(
-      "check_image_edit_rate_limit",
-      { p_user_id: userId || null, p_ip_address: ipAddress }
-    );
+    // Check rate limit for authenticated users only
+    if (userId) {
+      const { data: canEdit, error: rateLimitError } = await supabase.rpc(
+        "check_image_edit_rate_limit",
+        { p_user_id: userId }
+      );
 
-    if (rateLimitError) {
-      console.error("Rate limit check error:", rateLimitError);
-    }
+      if (rateLimitError) {
+        console.error("Rate limit check error:", rateLimitError);
+      }
 
-    if (canEdit === false) {
-      console.log("Rate limit exceeded for IP:", ipAddress, "userId:", userId);
-      return new Response(JSON.stringify({ 
-        error: "Has alcanzado el límite de 2 ediciones por 3 horas. Por favor espera antes de intentar de nuevo." 
-      }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (canEdit === false) {
+        console.log("Rate limit exceeded for userId:", userId);
+        return new Response(JSON.stringify({ 
+          error: "Has alcanzado el límite de 2 ediciones por 3 horas. Por favor espera antes de intentar de nuevo." 
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -147,10 +144,10 @@ serve(async (req) => {
       });
     }
 
-    // Record usage
+    // Record usage (only user_id, no IP)
     const { error: insertError } = await supabase
       .from("image_edit_usage")
-      .insert({ user_id: userId || null, ip_address: ipAddress });
+      .insert({ user_id: userId || null });
 
     if (insertError) {
       console.error("Failed to record usage:", insertError);
