@@ -24,14 +24,7 @@ interface ActionButtonsProps {
   userId?: string;
 }
 
-const actions = [
-  {
-    id: "image",
-    label: "Generar Imagen",
-    icon: ImagePlus,
-    prompt: "Genera una imagen de un atardecer en la playa con palmeras y colores vibrantes"
-  },
-];
+const actions: { id: string; label: string; icon: typeof ImagePlus; prompt: string }[] = [];
 
 export function ActionButtons({ onAction, disabled, userName, onUserNameChange, onSaveToHistory, isAuthenticated, userId }: ActionButtonsProps) {
   const [name, setName] = useState("");
