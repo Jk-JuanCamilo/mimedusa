@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Mic, MicOff } from "lucide-react";
 import { ActionButtons } from "./ActionButtons";
 import { ModelSelector } from "./ModelSelector";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatInputProps {
   onSend: (message: string, model?: string) => void;
@@ -20,7 +21,10 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelChange, userName, onUserNameChange, onSaveToHistory, isAuthenticated, userId }: ChatInputProps) {
   const [input, setInput] = useState("");
+  const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -29,9 +33,91 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
     }
   }, [input]);
 
+  useEffect(() => {
+    // Initialize speech recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'es-ES';
+
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        if (finalTranscript) {
+          setInput(prev => prev + finalTranscript);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        if (event.error === 'not-allowed') {
+          toast({
+            title: "Micrófono bloqueado",
+            description: "Por favor permite el acceso al micrófono en tu navegador.",
+            variant: "destructive",
+          });
+        }
+      };
+
+      recognition.onend = () => {
+        if (isListening) {
+          recognition.start();
+        }
+      };
+
+      recognitionRef.current = recognition;
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [isListening, toast]);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      toast({
+        title: "No disponible",
+        description: "Tu navegador no soporta reconocimiento de voz.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+      toast({
+        title: "Escuchando...",
+        description: "Habla ahora, tu voz se convertirá en texto.",
+      });
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !isLoading && !disabled) {
+      if (isListening && recognitionRef.current) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+      }
       onSend(input.trim(), selectedModel);
       setInput("");
     }
@@ -76,11 +162,25 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Escribe tu mensaje..."
+          placeholder={isListening ? "Escuchando tu voz..." : "Escribe tu mensaje..."}
           disabled={isLoading || disabled}
           className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-foreground placeholder:text-muted-foreground"
           rows={1}
         />
+        <Button
+          type="button"
+          size="icon"
+          variant={isListening ? "destructive" : "outline"}
+          onClick={toggleListening}
+          disabled={isLoading || disabled}
+          className="flex-shrink-0 transition-all"
+        >
+          {isListening ? (
+            <MicOff className="w-4 h-4" />
+          ) : (
+            <Mic className="w-4 h-4" />
+          )}
+        </Button>
         <Button
           type="submit"
           size="icon"
