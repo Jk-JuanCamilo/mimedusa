@@ -8,75 +8,81 @@ const corsHeaders = {
 const templates: Record<string, { title: string; systemPrompt: string; columns: string[] }> = {
   "data-analysis": {
     title: "Análisis de Datos",
-    systemPrompt: "Genera una tabla de datos para análisis con columnas relevantes, incluyendo fórmulas sugeridas como PROMEDIO, SUMA, DESVEST, etc.",
+    systemPrompt: "Genera una tabla de datos para análisis con columnas relevantes, incluyendo fórmulas sugeridas.",
     columns: ["ID", "Categoría", "Valor", "Fecha", "Observación"]
   },
   "finance": {
     title: "Control Financiero",
-    systemPrompt: "Genera una tabla de control financiero con ingresos, gastos, balance y categorías. Incluye fórmulas de totales y porcentajes.",
+    systemPrompt: "Genera una tabla de control financiero con ingresos, gastos, balance y categorías.",
     columns: ["Fecha", "Descripción", "Categoría", "Ingreso", "Gasto", "Balance"]
   },
   "sales": {
     title: "Seguimiento de Ventas",
-    systemPrompt: "Genera una tabla de ventas con productos, cantidades, precios, descuentos y totales. Incluye cálculos de comisiones y metas.",
-    columns: ["Fecha", "Vendedor", "Producto", "Cantidad", "Precio Unitario", "Descuento", "Total", "Comisión"]
+    systemPrompt: "Genera una tabla de ventas con productos, cantidades, precios y totales.",
+    columns: ["Fecha", "Vendedor", "Producto", "Cantidad", "Precio Unitario", "Total"]
   },
   "inventory": {
     title: "Control de Inventario",
-    systemPrompt: "Genera una tabla de inventario con productos, stock, precio de compra, precio de venta, y alertas de stock mínimo.",
-    columns: ["Código", "Producto", "Categoría", "Stock Actual", "Stock Mínimo", "Precio Compra", "Precio Venta", "Valor Total"]
+    systemPrompt: "Genera una tabla de inventario con productos, stock, precios.",
+    columns: ["Código", "Producto", "Stock Actual", "Precio Compra", "Precio Venta"]
   },
   "budget": {
     title: "Presupuesto",
-    systemPrompt: "Genera una tabla de presupuesto con categorías, montos presupuestados, gastos reales y variaciones.",
-    columns: ["Categoría", "Presupuestado", "Ejecutado", "Variación", "% Ejecución"]
+    systemPrompt: "Genera una tabla de presupuesto con categorías y montos.",
+    columns: ["Categoría", "Presupuestado", "Ejecutado", "Variación"]
   },
   "report": {
     title: "Informe",
-    systemPrompt: "Genera una tabla estructurada para informes con datos organizados por período, métricas y comparativas.",
-    columns: ["Período", "Métrica", "Valor Actual", "Valor Anterior", "Variación %"]
+    systemPrompt: "Genera una tabla estructurada para informes.",
+    columns: ["Período", "Métrica", "Valor Actual", "Valor Anterior"]
   },
   "project": {
     title: "Gestión de Proyecto",
-    systemPrompt: "Genera una tabla de seguimiento de proyecto con tareas, responsables, fechas, estados y porcentaje de avance.",
-    columns: ["Tarea", "Responsable", "Fecha Inicio", "Fecha Fin", "Estado", "% Avance", "Prioridad"]
+    systemPrompt: "Genera una tabla de seguimiento de proyecto.",
+    columns: ["Tarea", "Responsable", "Fecha Inicio", "Fecha Fin", "Estado"]
   },
   "payroll": {
     title: "Nómina",
-    systemPrompt: "Genera una tabla de nómina con empleados, salarios, deducciones, bonificaciones y neto a pagar.",
-    columns: ["Empleado", "Cargo", "Salario Base", "Bonificaciones", "Deducciones", "Salud", "Pensión", "Neto"]
+    systemPrompt: "Genera una tabla de nómina con empleados y salarios.",
+    columns: ["Empleado", "Cargo", "Salario Base", "Deducciones", "Neto"]
   },
   "invoice-tracker": {
     title: "Seguimiento de Facturas",
-    systemPrompt: "Genera una tabla de facturas con número, cliente, fecha, monto, estado de pago y días de vencimiento.",
-    columns: ["No. Factura", "Cliente", "Fecha Emisión", "Fecha Vencimiento", "Monto", "Estado", "Días Vencido"]
+    systemPrompt: "Genera una tabla de facturas.",
+    columns: ["No. Factura", "Cliente", "Fecha", "Monto", "Estado"]
   },
   "kpi": {
     title: "Indicadores KPI",
-    systemPrompt: "Genera una tabla de KPIs con indicadores, metas, valores actuales, estado (semáforo) y tendencia.",
-    columns: ["KPI", "Descripción", "Meta", "Valor Actual", "% Cumplimiento", "Estado", "Tendencia"]
+    systemPrompt: "Genera una tabla de KPIs.",
+    columns: ["KPI", "Meta", "Valor Actual", "Estado"]
   },
   "macros": {
     title: "Plantilla con Macros",
-    systemPrompt: "Genera una tabla con datos de ejemplo y proporciona código VBA para macros útiles como formateo automático, filtros y cálculos.",
+    systemPrompt: "Genera una tabla con datos de ejemplo y código VBA para macros.",
     columns: ["Dato 1", "Dato 2", "Dato 3", "Resultado"]
   },
   "custom": {
     title: "Personalizado",
-    systemPrompt: "Genera una tabla personalizada según la descripción del usuario con las columnas y datos especificados.",
+    systemPrompt: "Genera una tabla personalizada según la descripción.",
     columns: []
   }
 };
 
 serve(async (req) => {
+  console.log("generate-xlsx: Request received", req.method);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { templateType, description, customTitle, importedData, includeCharts } = await req.json();
+    const body = await req.json();
+    console.log("generate-xlsx: Body parsed", JSON.stringify(body).substring(0, 200));
+    
+    const { templateType, description, customTitle, importedData, includeCharts } = body;
 
     if (!templateType || !description) {
+      console.log("generate-xlsx: Missing required fields");
       return new Response(
         JSON.stringify({ error: "Se requiere tipo de plantilla y descripción" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -85,6 +91,7 @@ serve(async (req) => {
 
     const template = templates[templateType];
     if (!template) {
+      console.log("generate-xlsx: Invalid template type", templateType);
       return new Response(
         JSON.stringify({ error: "Tipo de plantilla no válido" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -93,58 +100,44 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY no está configurada");
+      console.error("generate-xlsx: LOVABLE_API_KEY not found");
+      return new Response(
+        JSON.stringify({ error: "Error de configuración del servidor" }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const hasImportedData = importedData && importedData.trim().length > 0;
 
     const chartInstructions = includeCharts ? `
-INSTRUCCIONES PARA GRÁFICOS (OBLIGATORIO):
-- DEBES crear una hoja adicional llamada "--- HOJA: Gráficos"
-- En esta hoja incluye:
-  1. Un RESUMEN con totales, promedios y métricas clave organizados para gráficos
-  2. Datos agregados por categoría/período listos para gráficos de barras/líneas
-  3. Porcentajes calculados para gráficos de torta/dona
-  4. Una sección "DATOS PARA GRÁFICOS" con columnas: Categoría | Valor | Porcentaje
-  5. Una sección "TENDENCIA" si hay datos temporales: Período | Valor
-- Los datos deben estar organizados para que Excel pueda crear gráficos automáticamente al seleccionarlos
-` : '';
+También crea una sección adicional separada con "--- HOJA: Gráficos" que incluya:
+- Resumen con totales y promedios
+- Datos agregados por categoría listos para gráficos` : '';
 
-    const systemPrompt = `Eres un experto en Excel y análisis de datos. ${template.systemPrompt}
+    const systemPrompt = `Eres un experto en Excel. ${template.systemPrompt}
 
-INSTRUCCIONES CRÍTICAS:
-1. Genera datos en formato de tabla usando el separador | (pipe)
-2. La primera fila DEBE ser los encabezados
-3. Cada fila debe tener el mismo número de columnas
-4. Usa datos realistas y relevantes basados en la descripción del usuario
-5. Si el usuario pide fórmulas o macros, inclúyelas como texto explicativo después de la tabla
-6. Para múltiples hojas, usa "--- HOJA: NombreHoja" como separador
-${hasImportedData ? '7. El usuario ha importado datos CSV - DEBES usar estos datos como base y aplicar las transformaciones/análisis solicitados' : ''}
+REGLAS OBLIGATORIAS:
+1. Genera datos en formato tabla usando | (pipe) como separador
+2. Primera fila = encabezados
+3. Datos realistas y útiles
+4. Para múltiples hojas usa "--- HOJA: NombreHoja"
+${hasImportedData ? '5. Usa los datos CSV importados como base' : ''}
 ${chartInstructions}
 
-${template.columns.length > 0 ? `Columnas sugeridas: ${template.columns.join(', ')}` : ''}
+${template.columns.length > 0 ? `Columnas: ${template.columns.join(', ')}` : ''}
 
-EJEMPLO DE FORMATO:
-| Columna1 | Columna2 | Columna3 |
-| Dato1 | Dato2 | 100 |
-| Dato3 | Dato4 | 200 |
+FORMATO:
+| Col1 | Col2 | Col3 |
+| dato1 | dato2 | 100 |
+| dato3 | dato4 | 200 |`;
 
-Si incluyes macros VBA, usa este formato:
-=== MACRO VBA ===
-Sub NombreMacro()
-    ' Código aquí
-End Sub
-================`;
-
-    let userMessage = `Genera un archivo Excel para: ${description}`;
+    let userMessage = `Genera Excel para: ${description}`;
     
     if (hasImportedData) {
-      userMessage += `\n\n--- DATOS IMPORTADOS DEL CSV ---\n${importedData}\n--- FIN DATOS IMPORTADOS ---\n\nUsa estos datos como base para el Excel y aplica las transformaciones/análisis solicitados.`;
+      userMessage += `\n\nDATOS CSV:\n${importedData.substring(0, 5000)}`;
     }
 
-    if (includeCharts) {
-      userMessage += `\n\nIMPORTANTE: Incluye una hoja de "Gráficos" con datos agregados y resumen visual listos para crear gráficos en Excel.`;
-    }
+    console.log("generate-xlsx: Calling AI API");
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -153,7 +146,7 @@ End Sub
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-flash-lite',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
@@ -161,27 +154,44 @@ End Sub
       }),
     });
 
+    console.log("generate-xlsx: AI response status", response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI API Error:", response.status, errorText);
+      console.error("generate-xlsx: AI API Error", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Límite de solicitudes excedido. Intenta de nuevo en unos momentos." }),
+          JSON.stringify({ error: "Límite de solicitudes excedido. Intenta en unos momentos." }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "Créditos insuficientes. Agrega fondos a tu cuenta." }),
+          JSON.stringify({ error: "Créditos insuficientes." }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      throw new Error("Error al generar contenido");
+      return new Response(
+        JSON.stringify({ error: "Error al conectar con el servicio de IA" }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const data = await response.json();
+    console.log("generate-xlsx: AI response received");
+    
     const content = data.choices?.[0]?.message?.content || "";
+    
+    if (!content) {
+      console.error("generate-xlsx: Empty content from AI");
+      return new Response(
+        JSON.stringify({ error: "No se generó contenido. Intenta de nuevo." }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log("generate-xlsx: Success, content length", content.length);
 
     return new Response(
       JSON.stringify({
@@ -193,7 +203,7 @@ End Sub
     );
 
   } catch (error) {
-    console.error("Error in generate-xlsx:", error);
+    console.error("generate-xlsx: Error", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Error desconocido" }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
