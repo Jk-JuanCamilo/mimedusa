@@ -21,10 +21,45 @@ const templates: Record<string, { title: string; systemPrompt: string; sections:
     systemPrompt: "Genera un contrato legal profesional con todas las cláusulas necesarias y lenguaje jurídico apropiado.",
     sections: ["Encabezado", "Partes", "Antecedentes", "Cláusulas", "Obligaciones", "Vigencia", "Firmas"]
   },
+  "rental-contract": {
+    title: "Contrato de Arrendamiento",
+    systemPrompt: "Genera un contrato de arrendamiento de vivienda o local comercial con todas las cláusulas legales necesarias.",
+    sections: ["Partes", "Inmueble", "Canon", "Duración", "Obligaciones Arrendador", "Obligaciones Arrendatario", "Garantías", "Causales de Terminación", "Firmas"]
+  },
+  "work-contract": {
+    title: "Contrato de Trabajo",
+    systemPrompt: "Genera un contrato de trabajo con todas las condiciones laborales y cláusulas según la legislación laboral.",
+    sections: ["Partes", "Objeto", "Funciones", "Salario", "Jornada", "Lugar de Trabajo", "Duración", "Obligaciones", "Terminación", "Firmas"]
+  },
+  "service-contract": {
+    title: "Contrato de Prestación de Servicios",
+    systemPrompt: "Genera un contrato de prestación de servicios profesionales independientes.",
+    sections: ["Partes", "Objeto", "Alcance", "Honorarios", "Forma de Pago", "Duración", "Obligaciones", "Confidencialidad", "Firmas"]
+  },
+  "recommendation-letter": {
+    title: "Carta de Recomendación",
+    systemPrompt: "Genera una carta de recomendación laboral o académica profesional y convincente.",
+    sections: ["Membrete", "Fecha", "Destinatario", "Presentación", "Relación Laboral", "Cualidades", "Logros", "Recomendación", "Datos de Contacto", "Firma"]
+  },
+  "work-certificate": {
+    title: "Constancia Laboral",
+    systemPrompt: "Genera una constancia o certificación laboral oficial que acredite la vinculación de un empleado.",
+    sections: ["Membrete Empresa", "Fecha", "Título", "Certificación", "Datos del Empleado", "Cargo", "Período", "Salario", "Firma", "Sello"]
+  },
+  "resignation-letter": {
+    title: "Carta de Renuncia",
+    systemPrompt: "Genera una carta de renuncia profesional y respetuosa.",
+    sections: ["Fecha", "Destinatario", "Asunto", "Comunicación de Renuncia", "Agradecimientos", "Disposición", "Despedida", "Firma"]
+  },
   "invoice": {
     title: "Factura",
     systemPrompt: "Genera una factura comercial profesional con todos los datos fiscales y detalles de productos/servicios.",
     sections: ["Datos Emisor", "Datos Cliente", "Número Factura", "Fecha", "Conceptos", "Subtotal", "Impuestos", "Total"]
+  },
+  "quote": {
+    title: "Cotización",
+    systemPrompt: "Genera una cotización comercial detallada con productos/servicios y condiciones.",
+    sections: ["Datos Empresa", "Cliente", "Fecha", "Validez", "Descripción", "Precios", "Condiciones de Pago", "Garantía", "Total"]
   },
   "proposal": {
     title: "Propuesta Comercial",
@@ -65,6 +100,46 @@ const templates: Record<string, { title: string; systemPrompt: string; sections:
     title: "Derecho de Petición",
     systemPrompt: "Genera un derecho de petición formal según la legislación colombiana.",
     sections: ["Destinatario", "Peticionario", "Hechos", "Fundamentos", "Petición", "Pruebas", "Notificaciones", "Firma"]
+  },
+  "authorization": {
+    title: "Autorización",
+    systemPrompt: "Genera un documento de autorización formal para trámites o representación.",
+    sections: ["Autorizante", "Autorizado", "Objeto", "Alcance", "Vigencia", "Documento de Identidad", "Firma"]
+  },
+  "promissory-note": {
+    title: "Pagaré",
+    systemPrompt: "Genera un pagaré formal con todos los elementos legales requeridos.",
+    sections: ["Lugar y Fecha", "Monto", "Deudor", "Acreedor", "Plazo", "Intereses", "Lugar de Pago", "Firma"]
+  },
+  "complaint": {
+    title: "Queja o Reclamo",
+    systemPrompt: "Genera una queja o reclamo formal ante una entidad o empresa.",
+    sections: ["Destinatario", "Datos del Quejoso", "Hechos", "Perjuicios", "Solicitud", "Pruebas", "Notificaciones", "Firma"]
+  },
+  "reference-letter": {
+    title: "Carta de Referencia Personal",
+    systemPrompt: "Genera una carta de referencia personal o de buena conducta.",
+    sections: ["Fecha", "Destinatario", "Declaración", "Tiempo de Conocimiento", "Cualidades", "Recomendación", "Datos de Contacto", "Firma"]
+  },
+  "sales-contract": {
+    title: "Contrato de Compraventa",
+    systemPrompt: "Genera un contrato de compraventa de bienes muebles o inmuebles.",
+    sections: ["Partes", "Objeto", "Precio", "Forma de Pago", "Entrega", "Garantías", "Obligaciones", "Firmas"]
+  },
+  "receipt": {
+    title: "Recibo de Pago",
+    systemPrompt: "Genera un recibo de pago formal con todos los datos necesarios.",
+    sections: ["Número", "Fecha", "Receptor", "Pagador", "Concepto", "Monto", "Forma de Pago", "Firma"]
+  },
+  "apology-letter": {
+    title: "Carta de Disculpa",
+    systemPrompt: "Genera una carta de disculpa profesional y sincera.",
+    sections: ["Fecha", "Destinatario", "Reconocimiento", "Explicación", "Disculpa", "Compromiso", "Despedida", "Firma"]
+  },
+  "termination-letter": {
+    title: "Carta de Terminación de Contrato",
+    systemPrompt: "Genera una carta formal de terminación de contrato laboral o comercial.",
+    sections: ["Fecha", "Destinatario", "Referencia al Contrato", "Comunicación", "Motivo", "Fecha Efectiva", "Liquidación", "Firma"]
   }
 };
 
