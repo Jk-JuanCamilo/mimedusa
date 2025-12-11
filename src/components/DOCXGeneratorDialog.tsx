@@ -76,11 +76,25 @@ function BorderPreview({ borderStyle }: { borderStyle: BorderStyleOption }) {
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs text-muted-foreground">Vista previa del borde</Label>
-      <div className={`w-full h-28 bg-white rounded shadow-sm ${getBorderCSS()} flex items-center justify-center`}>
-        <div className="text-center p-2">
-          <p className="text-xs font-medium text-black">{option.label}</p>
-          <p className="text-[10px] text-gray-500">{option.description}</p>
+      <Label className="text-xs text-muted-foreground text-center block">Vista previa del borde</Label>
+      <div className="flex justify-center">
+        <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-inner">
+          {/* Paper sheet */}
+          <div 
+            className={`w-24 h-32 bg-white rounded-sm shadow-lg ${getBorderCSS()} flex flex-col items-center justify-center transition-all duration-300`}
+            style={{ aspectRatio: '210/297' }}
+          >
+            {/* Document content simulation */}
+            <div className="w-full px-2 space-y-1">
+              <div className="h-1.5 bg-gray-300 rounded w-3/4 mx-auto" />
+              <div className="h-1 bg-gray-200 rounded w-full" />
+              <div className="h-1 bg-gray-200 rounded w-5/6" />
+              <div className="h-1 bg-gray-200 rounded w-full" />
+              <div className="h-1 bg-gray-200 rounded w-4/5" />
+            </div>
+          </div>
+          {/* Style label */}
+          <p className="text-[10px] font-medium text-center mt-2 text-foreground">{option.label}</p>
         </div>
       </div>
     </div>
