@@ -686,19 +686,16 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer ${
+                  className={`border border-dashed rounded-md p-2 flex items-center gap-3 transition-colors cursor-pointer ${
                     isDragging 
                       ? 'border-primary bg-primary/10' 
                       : 'border-border hover:border-primary/50 hover:bg-muted/30'
                   }`}
                   onClick={() => csvInputRef.current?.click()}
                 >
-                  <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Arrastra CSV o Excel aquí
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    o haz clic para seleccionar
+                  <Upload className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    Arrastra CSV/Excel o haz clic
                   </p>
                 </div>
               )}
