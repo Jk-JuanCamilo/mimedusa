@@ -135,7 +135,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: template.systemPrompt },
           { role: "user", content: `Genera un ${template.title} basado en esta descripción:\n\n${description}\n\nAsegúrate de incluir las siguientes secciones: ${template.sections.join(", ")}.` }
