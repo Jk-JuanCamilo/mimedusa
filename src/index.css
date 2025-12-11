@@ -134,4 +134,87 @@
   .bg-gradient-mystical {
     @apply bg-gradient-to-br from-background via-card to-background;
   }
+
+  /* Floating title animation */
+  .animate-float-title {
+    animation: float-title 3s ease-in-out infinite;
+  }
+
+  /* Slow floating for jellyfish */
+  .animate-float-slow {
+    animation: float-slow 4s ease-in-out infinite;
+  }
+
+  /* Sparkle animation */
+  .animate-sparkle {
+    animation: sparkle 1.5s ease-in-out infinite;
+  }
+
+  /* Tentacle wave animation */
+  .animate-tentacle {
+    animation: tentacle-wave 2s ease-in-out infinite;
+  }
+
+  /* Gradient shift animation */
+  .animate-gradient-shift {
+    animation: gradient-shift 3s ease-in-out infinite;
+  }
+}
+
+@keyframes float-title {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(2deg);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    opacity: 0.6;
+    transform: scale(0.8) rotate(-10deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(0deg);
+  }
+  75% {
+    opacity: 0.6;
+    transform: scale(0.8) rotate(10deg);
+  }
+}
+
+@keyframes tentacle-wave {
+  0%, 100% {
+    d: path("M12 20 Q10 35 14 50");
+  }
+  50% {
+    d: path("M12 20 Q14 35 10 50");
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
 }
