@@ -230,7 +230,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
             text: title,
             bold: true,
             size: 32,
-            color: "2E3B4E",
+            color: "000000",
           }),
         ],
         heading: HeadingLevel.TITLE,
@@ -244,7 +244,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
       new Paragraph({
         border: {
           bottom: {
-            color: "6B46C1",
+            color: "000000",
             space: 1,
             size: 12,
             style: BorderStyle.SINGLE,
@@ -272,14 +272,14 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                 text: trimmedLine.replace('## ', ''),
                 bold: true,
                 size: 26,
-                color: "6B46C1",
+                color: "000000",
               }),
             ],
             heading: HeadingLevel.HEADING_2,
             spacing: { before: 300, after: 150 },
             border: {
               bottom: {
-                color: "E9D5FF",
+                color: "000000",
                 space: 1,
                 size: 6,
                 style: BorderStyle.SINGLE,
@@ -296,7 +296,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                 text: trimmedLine.replace('### ', ''),
                 bold: true,
                 size: 24,
-                color: "4A5568",
+                color: "000000",
               }),
             ],
             heading: HeadingLevel.HEADING_3,
@@ -357,7 +357,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
       new Paragraph({
         border: {
           top: {
-            color: "E9D5FF",
+            color: "000000",
             space: 1,
             size: 6,
             style: BorderStyle.SINGLE,
@@ -368,7 +368,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
             text: `Documento generado por Medussa IA - ${new Date().toLocaleDateString('es-ES')}`,
             size: 18,
             italics: true,
-            color: "718096",
+            color: "000000",
           }),
         ],
         alignment: AlignmentType.CENTER,
