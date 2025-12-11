@@ -25,15 +25,20 @@ interface PreviewData {
   filename: string;
 }
 
-type BorderStyleOption = "double-black" | "single-black" | "thick-black" | "double-purple" | "elegant" | "none";
+type BorderStyleOption = "double" | "single" | "thick" | "triple" | "dotted" | "dashed" | "wave" | "shadow" | "inset" | "outset" | "none";
 
-const borderOptions: { value: BorderStyleOption; label: string; description: string; preview: { style: string; color: string } }[] = [
-  { value: "double-black", label: "Doble Negro", description: "Borde doble elegante en negro", preview: { style: "double", color: "#000000" } },
-  { value: "single-black", label: "Simple Negro", description: "Línea simple en negro", preview: { style: "solid", color: "#000000" } },
-  { value: "thick-black", label: "Grueso Negro", description: "Borde grueso y prominente", preview: { style: "solid 4px", color: "#000000" } },
-  { value: "double-purple", label: "Doble Morado", description: "Borde doble en morado", preview: { style: "double", color: "#6B46C1" } },
-  { value: "elegant", label: "Elegante", description: "Diseño fino y sofisticado", preview: { style: "solid 1px", color: "#4A5568" } },
-  { value: "none", label: "Sin Borde", description: "Documento sin bordes de página", preview: { style: "none", color: "transparent" } },
+const borderOptions: { value: BorderStyleOption; label: string; description: string }[] = [
+  { value: "double", label: "Doble", description: "Borde doble elegante" },
+  { value: "single", label: "Simple", description: "Línea simple clásica" },
+  { value: "thick", label: "Grueso", description: "Borde grueso y prominente" },
+  { value: "triple", label: "Triple", description: "Tres líneas paralelas" },
+  { value: "dotted", label: "Punteado", description: "Línea de puntos" },
+  { value: "dashed", label: "Discontinuo", description: "Línea discontinua" },
+  { value: "wave", label: "Ondulado", description: "Borde con ondas" },
+  { value: "shadow", label: "Sombra", description: "Efecto de sombra 3D" },
+  { value: "inset", label: "Hundido", description: "Efecto hacia adentro" },
+  { value: "outset", label: "Relieve", description: "Efecto hacia afuera" },
+  { value: "none", label: "Sin Borde", description: "Documento limpio sin bordes" },
 ];
 
 function BorderPreview({ borderStyle }: { borderStyle: BorderStyleOption }) {
@@ -42,18 +47,28 @@ function BorderPreview({ borderStyle }: { borderStyle: BorderStyleOption }) {
 
   const getBorderCSS = () => {
     switch (borderStyle) {
-      case "double-black":
+      case "double":
         return "border-[3px] border-double border-black";
-      case "single-black":
+      case "single":
         return "border-2 border-solid border-black";
-      case "thick-black":
+      case "thick":
         return "border-4 border-solid border-black";
-      case "double-purple":
-        return "border-[3px] border-double border-purple-600";
-      case "elegant":
-        return "border border-solid border-gray-600";
+      case "triple":
+        return "border-[4px] border-double border-black outline outline-1 outline-black outline-offset-1";
+      case "dotted":
+        return "border-2 border-dotted border-black";
+      case "dashed":
+        return "border-2 border-dashed border-black";
+      case "wave":
+        return "border-2 border-solid border-black [border-style:wavy]";
+      case "shadow":
+        return "border-2 border-solid border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)]";
+      case "inset":
+        return "border-4 border-black [border-style:inset]";
+      case "outset":
+        return "border-4 border-black [border-style:outset]";
       case "none":
-        return "border border-dashed border-muted-foreground/30";
+        return "border border-dashed border-gray-300";
       default:
         return "";
     }
@@ -62,10 +77,10 @@ function BorderPreview({ borderStyle }: { borderStyle: BorderStyleOption }) {
   return (
     <div className="space-y-2">
       <Label className="text-xs text-muted-foreground">Vista previa del borde</Label>
-      <div className={`w-full h-24 bg-background rounded ${getBorderCSS()} flex items-center justify-center`}>
+      <div className={`w-full h-28 bg-white rounded shadow-sm ${getBorderCSS()} flex items-center justify-center`}>
         <div className="text-center p-2">
-          <p className="text-xs font-medium text-foreground">{option.label}</p>
-          <p className="text-[10px] text-muted-foreground">{option.description}</p>
+          <p className="text-xs font-medium text-black">{option.label}</p>
+          <p className="text-[10px] text-gray-500">{option.description}</p>
         </div>
       </div>
     </div>
@@ -107,7 +122,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   const [templateType, setTemplateType] = useState("");
   const [description, setDescription] = useState("");
   const [customTitle, setCustomTitle] = useState("");
-  const [borderStyle, setBorderStyle] = useState<BorderStyleOption>("double-black");
+  const [borderStyle, setBorderStyle] = useState<BorderStyleOption>("double");
   const [isGenerating, setIsGenerating] = useState(false);
   const [saveToHistory, setSaveToHistory] = useState(false);
   const [preview, setPreview] = useState<PreviewData | null>(null);
@@ -123,35 +138,65 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   };
 
   const getBorderConfig = (style: BorderStyleOption) => {
-    const configs = {
-      "double-black": {
+    const configs: Record<BorderStyleOption, { style: typeof BorderStyle[keyof typeof BorderStyle]; size: number; color: string; space: number } | null> = {
+      "double": {
         style: BorderStyle.DOUBLE,
         size: 12,
         color: "000000",
         space: 24,
       },
-      "single-black": {
+      "single": {
         style: BorderStyle.SINGLE,
         size: 8,
         color: "000000",
         space: 24,
       },
-      "thick-black": {
+      "thick": {
         style: BorderStyle.THICK,
         size: 18,
         color: "000000",
         space: 24,
       },
-      "double-purple": {
-        style: BorderStyle.DOUBLE,
+      "triple": {
+        style: BorderStyle.TRIPLE,
         size: 12,
-        color: "6B46C1",
+        color: "000000",
         space: 24,
       },
-      "elegant": {
-        style: BorderStyle.SINGLE,
-        size: 4,
-        color: "4A5568",
+      "dotted": {
+        style: BorderStyle.DOTTED,
+        size: 8,
+        color: "000000",
+        space: 24,
+      },
+      "dashed": {
+        style: BorderStyle.DASHED,
+        size: 8,
+        color: "000000",
+        space: 24,
+      },
+      "wave": {
+        style: BorderStyle.WAVE,
+        size: 8,
+        color: "000000",
+        space: 24,
+      },
+      "shadow": {
+        style: BorderStyle.THREE_D_ENGRAVE,
+        size: 12,
+        color: "000000",
+        space: 24,
+      },
+      "inset": {
+        style: BorderStyle.INSET,
+        size: 12,
+        color: "000000",
+        space: 24,
+      },
+      "outset": {
+        style: BorderStyle.OUTSET,
+        size: 12,
+        color: "000000",
         space: 24,
       },
       "none": null,
