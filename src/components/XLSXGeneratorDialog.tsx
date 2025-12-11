@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SpeechTextarea } from "@/components/ui/speech-textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -600,7 +601,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
               <label className="text-sm text-muted-foreground">
                 Describe qué datos necesitas
               </label>
-              <Textarea
+              <SpeechTextarea
                 placeholder={
                   templateType === "data-analysis" ? "Ej: Análisis de ventas mensuales con promedio, desviación estándar y tendencia..."
                   : templateType === "finance" ? "Ej: Control de gastos del hogar con categorías: alimentación, servicios, transporte..."
@@ -609,9 +610,8 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                   : "Describe los datos, columnas y cálculos que necesitas..."
                 }
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={setDescription}
                 className="bg-background/50 border-border min-h-[60px]"
-                maxLength={5000}
               />
               <p className="text-xs text-muted-foreground text-right">
                 {description.length}/5000 caracteres

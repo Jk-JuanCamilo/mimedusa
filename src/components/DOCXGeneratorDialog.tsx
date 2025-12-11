@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { SpeechTextarea } from "@/components/ui/speech-textarea";
 import { FileText, Download, Loader2, ArrowLeft, Edit3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -419,9 +420,9 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
 
             <div className="space-y-2">
               <Label>Descripción del Documento</Label>
-              <Textarea
+              <SpeechTextarea
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={setDescription}
                 placeholder="Describe qué necesitas en tu documento. Ejemplo: Carta de renuncia para empresa de tecnología, con tono profesional y agradecimiento por los años trabajados..."
                 className="min-h-[120px]"
               />
