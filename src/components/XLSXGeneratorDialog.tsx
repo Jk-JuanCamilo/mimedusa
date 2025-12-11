@@ -454,7 +454,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
           <span className="text-xs">Generar Excel</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className={`bg-card border-border ${preview ? 'max-w-4xl h-[90vh]' : 'max-w-lg'}`}>
+      <DialogContent className={`bg-card border-border max-h-[85vh] overflow-hidden ${preview ? 'max-w-3xl' : 'max-w-md'}`}>
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
             {preview ? (
@@ -472,20 +472,20 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
         </DialogHeader>
 
         {preview ? (
-          <div className="flex flex-col gap-4 h-full overflow-hidden">
+          <div className="flex flex-col gap-3 overflow-hidden max-h-[65vh]">
             {/* Preview or Editor */}
-            <div className="flex-1 min-h-0 border border-border rounded-lg overflow-hidden bg-muted">
+            <div className="flex-1 min-h-0 border border-border rounded-lg overflow-hidden bg-muted max-h-[45vh]">
               {isEditing ? (
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-full max-h-[45vh]">
                   <Textarea
                     value={editedContent}
                     onChange={(e) => setEditedContent(e.target.value)}
-                    className="w-full h-full min-h-[400px] bg-background border-0 resize-none p-4 font-mono text-sm"
+                    className="w-full min-h-[200px] bg-background border-0 resize-none p-3 font-mono text-xs"
                     placeholder="Edita el contenido (formato tabla con | o comas)..."
                   />
                 </ScrollArea>
               ) : (
-                <ScrollArea className="h-full p-4">
+                <ScrollArea className="h-full max-h-[45vh] p-3">
                   {renderPreviewTable()}
                 </ScrollArea>
               )}
@@ -564,7 +564,8 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-4 mt-4">
+          <ScrollArea className="max-h-[60vh] pr-2">
+          <div className="flex flex-col gap-3 mt-2">
             <div className="space-y-2">
               <label className="text-sm text-muted-foreground">Tipo de plantilla</label>
               <Select value={templateType} onValueChange={setTemplateType}>
@@ -609,7 +610,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                 }
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-background/50 border-border min-h-[120px]"
+                className="bg-background/50 border-border min-h-[80px]"
                 maxLength={5000}
               />
               <p className="text-xs text-muted-foreground text-right">
@@ -756,6 +757,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
               El archivo se generará con estructura profesional basada en tu descripción
             </p>
           </div>
+          </ScrollArea>
         )}
       </DialogContent>
     </Dialog>
