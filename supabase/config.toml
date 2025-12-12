@@ -1,19 +1,19 @@
 project_id = "uqsbybajgrdbbjuauobi"
 
 [functions.chat]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-image]
 verify_jwt = true
 
 [functions.generate-pdf]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-xlsx]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-docx]
-verify_jwt = true
+verify_jwt = false
 
 [functions.edit-image]
-verify_jwt = false
+verify_jwt = true
