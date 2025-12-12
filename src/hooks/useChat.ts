@@ -145,20 +145,11 @@ export function useChat(options?: UseChatOptions) {
     };
 
     try {
-      // Verificar autenticación
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error("Debes iniciar sesión para chatear con Medussa IA");
-        setMessages(prev => prev.slice(0, -1));
-        setIsLoading(false);
-        return;
-      }
-
+      // Chat es público - no requiere autenticación
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ 
           messages: [...messages, userMsg],
