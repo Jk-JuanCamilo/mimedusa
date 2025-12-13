@@ -3,7 +3,7 @@ import { Bot, User, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCallback, useMemo } from "react";
 import { Document, Packer, Paragraph, TextRun } from "docx";
-import * as XLSX from "xlsx";
+import XLSX from "xlsx-js-style";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -96,17 +96,56 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
     }
 
     if (isXlsx) {
-      // Crear archivo Excel real (.xlsx)
+      // Crear archivo Excel real (.xlsx) con estilos profesionales
       const workbook = XLSX.utils.book_new();
       
+      // Estilos profesionales
+      const headerStyle = {
+        fill: { fgColor: { rgb: "4F46E5" } },
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "medium", color: { rgb: "312E81" } },
+          bottom: { style: "medium", color: { rgb: "312E81" } },
+          left: { style: "thin", color: { rgb: "312E81" } },
+          right: { style: "thin", color: { rgb: "312E81" } }
+        }
+      };
+
+      const evenRowStyle = {
+        fill: { fgColor: { rgb: "F3F4F6" } },
+        font: { sz: 11 },
+        border: {
+          top: { style: "thin", color: { rgb: "E5E7EB" } },
+          bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+          left: { style: "thin", color: { rgb: "E5E7EB" } },
+          right: { style: "thin", color: { rgb: "E5E7EB" } }
+        }
+      };
+
+      const oddRowStyle = {
+        fill: { fgColor: { rgb: "FFFFFF" } },
+        font: { sz: 11 },
+        border: {
+          top: { style: "thin", color: { rgb: "E5E7EB" } },
+          bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+          left: { style: "thin", color: { rgb: "E5E7EB" } },
+          right: { style: "thin", color: { rgb: "E5E7EB" } }
+        }
+      };
+      
       // Intentar extraer datos tabulares del contenido
-      const tableData: string[][] = [];
+      const tableData: (string | number)[][] = [];
       const lines = downloadContent.split('\n');
       
       // Buscar líneas con formato de tabla (separadas por |)
       lines.forEach(line => {
-        if (line.includes('|') && !line.startsWith('---')) {
-          const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+        if (line.includes('|') && !line.startsWith('---') && !line.match(/^[-|]+$/)) {
+          const cells = line.split('|').map(cell => {
+            const trimmed = cell.trim();
+            const num = parseFloat(trimmed.replace(/[,$%]/g, ''));
+            return isNaN(num) ? trimmed : num;
+          }).filter(cell => cell !== '');
           if (cells.length > 0) {
             tableData.push(cells);
           }
@@ -114,7 +153,11 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
           // Formato: "Fila X: valor1 | valor2 | valor3"
           const match = line.match(/Fila \d+:\s*(.+)/);
           if (match) {
-            const cells = match[1].split('|').map(cell => cell.trim());
+            const cells = match[1].split('|').map(cell => {
+              const trimmed = cell.trim();
+              const num = parseFloat(trimmed.replace(/[,$%]/g, ''));
+              return isNaN(num) ? trimmed : num;
+            });
             tableData.push(cells);
           }
         }
@@ -130,12 +173,30 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
 
       const worksheet = XLSX.utils.aoa_to_sheet(tableData);
       
-      // Ajustar ancho de columnas
+      // Aplicar estilos
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+      
+      // Ancho de columnas
       const colWidths = tableData[0]?.map((_, colIdx) => {
         const maxLength = Math.max(...tableData.map(row => String(row[colIdx] || '').length));
-        return { wch: Math.min(Math.max(maxLength, 10), 50) };
+        return { wch: Math.min(Math.max(maxLength + 2, 10), 40) };
       }) || [];
       worksheet['!cols'] = colWidths;
+
+      // Aplicar estilos a celdas
+      for (let r = range.s.r; r <= range.e.r; r++) {
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const cellAddress = XLSX.utils.encode_cell({ r, c });
+          const cell = worksheet[cellAddress];
+          if (cell) {
+            if (r === 0) {
+              cell.s = headerStyle;
+            } else {
+              cell.s = r % 2 === 0 ? evenRowStyle : oddRowStyle;
+            }
+          }
+        }
+      }
 
       XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
       

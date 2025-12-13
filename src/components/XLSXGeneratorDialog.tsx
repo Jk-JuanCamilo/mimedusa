@@ -22,7 +22,7 @@ import {
 import { Table, Loader2, Download, Eye, ArrowLeft, X, Edit, RefreshCw, Upload, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import * as XLSX from "xlsx";
+import XLSX from "xlsx-js-style";
 
 interface XLSXGeneratorDialogProps {
   disabled?: boolean;
@@ -241,6 +241,118 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   const createWorkbookFromContent = (content: string, title: string): XLSX.WorkBook => {
     const workbook = XLSX.utils.book_new();
     
+    // Professional color palette
+    const headerStyle = {
+      fill: { fgColor: { rgb: "4F46E5" } }, // Indigo
+      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
+      alignment: { horizontal: "center", vertical: "center" },
+      border: {
+        top: { style: "medium", color: { rgb: "312E81" } },
+        bottom: { style: "medium", color: { rgb: "312E81" } },
+        left: { style: "thin", color: { rgb: "312E81" } },
+        right: { style: "thin", color: { rgb: "312E81" } }
+      }
+    };
+
+    const evenRowStyle = {
+      fill: { fgColor: { rgb: "F3F4F6" } }, // Light gray
+      font: { sz: 11 },
+      alignment: { vertical: "center" },
+      border: {
+        top: { style: "thin", color: { rgb: "E5E7EB" } },
+        bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+        left: { style: "thin", color: { rgb: "E5E7EB" } },
+        right: { style: "thin", color: { rgb: "E5E7EB" } }
+      }
+    };
+
+    const oddRowStyle = {
+      fill: { fgColor: { rgb: "FFFFFF" } }, // White
+      font: { sz: 11 },
+      alignment: { vertical: "center" },
+      border: {
+        top: { style: "thin", color: { rgb: "E5E7EB" } },
+        bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+        left: { style: "thin", color: { rgb: "E5E7EB" } },
+        right: { style: "thin", color: { rgb: "E5E7EB" } }
+      }
+    };
+
+    const numberStyle = {
+      numFmt: "#,##0.00",
+      alignment: { horizontal: "right", vertical: "center" }
+    };
+
+    const currencyStyle = {
+      numFmt: '"$"#,##0.00',
+      alignment: { horizontal: "right", vertical: "center" }
+    };
+
+    const applyStylesToSheet = (worksheet: XLSX.WorkSheet, data: unknown[][]) => {
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+      
+      // Calculate column widths based on content
+      const colWidths: { wch: number }[] = [];
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        let maxWidth = 10;
+        for (let r = range.s.r; r <= range.e.r; r++) {
+          const cellValue = data[r]?.[c];
+          if (cellValue !== undefined && cellValue !== null) {
+            const cellLength = String(cellValue).length;
+            maxWidth = Math.max(maxWidth, Math.min(cellLength + 2, 40));
+          }
+        }
+        colWidths.push({ wch: maxWidth });
+      }
+      worksheet['!cols'] = colWidths;
+
+      // Apply styles to each cell
+      for (let r = range.s.r; r <= range.e.r; r++) {
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const cellAddress = XLSX.utils.encode_cell({ r, c });
+          const cell = worksheet[cellAddress];
+          
+          if (cell) {
+            if (r === 0) {
+              // Header row
+              cell.s = headerStyle;
+            } else {
+              // Data rows with alternating colors
+              const baseStyle = r % 2 === 0 ? evenRowStyle : oddRowStyle;
+              
+              // Check if cell is a number for special formatting
+              if (typeof cell.v === 'number') {
+                const cellValue = data[r]?.[c];
+                const headerValue = String(data[0]?.[c] || '').toLowerCase();
+                
+                // Detect currency columns
+                if (headerValue.includes('precio') || headerValue.includes('total') || 
+                    headerValue.includes('monto') || headerValue.includes('salario') ||
+                    headerValue.includes('ingreso') || headerValue.includes('gasto') ||
+                    headerValue.includes('costo') || headerValue.includes('valor') ||
+                    headerValue.includes('neto') || headerValue.includes('balance')) {
+                  cell.s = { ...baseStyle, ...currencyStyle };
+                } else {
+                  cell.s = { ...baseStyle, ...numberStyle };
+                }
+              } else {
+                cell.s = baseStyle;
+              }
+            }
+          }
+        }
+      }
+
+      // Add row heights
+      const rowHeights: { hpt: number }[] = [];
+      for (let r = range.s.r; r <= range.e.r; r++) {
+        rowHeights.push({ hpt: r === 0 ? 25 : 20 }); // Header taller
+      }
+      worksheet['!rows'] = rowHeights;
+
+      return worksheet;
+    };
+    
     // Split content by sheet markers or create single sheet
     const sheetSections = content.split(/---\s*HOJA:\s*/i);
     
@@ -254,13 +366,15 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
         const sheetContent = lines.slice(1).join('\n');
         const data = parseContentToData(sheetContent);
         
-        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        worksheet = applyStylesToSheet(worksheet, data);
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.substring(0, 31));
       });
     } else {
       // Single sheet
       const data = parseContentToData(content);
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
+      let worksheet = XLSX.utils.aoa_to_sheet(data);
+      worksheet = applyStylesToSheet(worksheet, data);
       XLSX.utils.book_append_sheet(workbook, worksheet, title.substring(0, 31));
     }
     
