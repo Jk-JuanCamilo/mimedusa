@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Mic, MicOff } from "lucide-react";
+import { Send, Loader2, Mic, MicOff, Plus, X, Image } from "lucide-react";
 import { ActionButtons } from "./ActionButtons";
 import { ModelSelector } from "./ModelSelector";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
-  onSend: (message: string, model?: string) => void;
+  onSend: (message: string, model?: string, imageData?: string) => void;
   isLoading: boolean;
   disabled?: boolean;
   selectedModel: string;
@@ -46,9 +46,12 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [audioLevel, setAudioLevel] = useState<number[]>([3, 5, 8, 5, 3]);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const animationRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Animar ondas mientras escucha
@@ -157,15 +160,63 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
     }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Archivo no válido",
+        description: "Por favor selecciona una imagen (JPG, PNG, WEBP, GIF).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Imagen muy grande",
+        description: "La imagen debe ser menor a 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      setAttachedImage(base64);
+      setImagePreview(base64);
+      toast({
+        title: "Imagen adjuntada",
+        description: "La imagen se enviará con tu mensaje.",
+      });
+    };
+    reader.readAsDataURL(file);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeImage = () => {
+    setAttachedImage(null);
+    setImagePreview(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isLoading && !disabled) {
+    if ((input.trim() || attachedImage) && !isLoading && !disabled) {
       if (isListening && recognitionRef.current) {
         recognitionRef.current.stop();
         setIsListening(false);
       }
-      onSend(input.trim(), selectedModel);
+      const message = input.trim() || (attachedImage ? "Analiza esta imagen" : "");
+      onSend(message, selectedModel, attachedImage || undefined);
       setInput("");
+      setAttachedImage(null);
+      setImagePreview(null);
     }
   };
 
@@ -228,19 +279,63 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
         </div>
       )}
 
+      {/* Image Preview */}
+      {imagePreview && (
+        <div className="relative inline-block">
+          <img 
+            src={imagePreview} 
+            alt="Imagen adjunta" 
+            className="max-h-32 rounded-lg border border-border/50"
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="destructive"
+            className="absolute -top-2 -right-2 h-6 w-6"
+            onClick={removeImage}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+
       {/* Input Area */}
       <div className={cn(
         "relative flex items-end gap-2 p-4 bg-muted/70 backdrop-blur-md border rounded-xl transition-all",
         isListening 
           ? "border-destructive/50 ring-2 ring-destructive/20" 
-          : "border-border/50"
+          : attachedImage
+            ? "border-primary/50 ring-2 ring-primary/20"
+            : "border-border/50"
       )}>
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageSelect}
+          className="hidden"
+        />
+        
+        {/* Attach image button */}
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isLoading || disabled}
+          className="flex-shrink-0 transition-all"
+          title="Adjuntar imagen"
+        >
+          <Plus className="w-4 h-4" />
+        </Button>
+
         <Textarea
           ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isListening ? "Escuchando tu voz..." : "Escribe tu mensaje..."}
+          placeholder={isListening ? "Escuchando tu voz..." : attachedImage ? "Describe qué quieres saber de la imagen..." : "Escribe tu mensaje..."}
           disabled={isLoading || disabled}
           className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-foreground placeholder:text-muted-foreground"
           rows={1}
@@ -265,7 +360,7 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
         <Button
           type="submit"
           size="icon"
-          disabled={!input.trim() || isLoading || disabled}
+          disabled={(!input.trim() && !attachedImage) || isLoading || disabled}
           className="flex-shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary transition-all"
         >
           {isLoading ? (
