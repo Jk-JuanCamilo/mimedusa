@@ -53,7 +53,7 @@ export function useChat(options?: UseChatOptions) {
     setMessages(msgs);
   }, []);
 
-  const sendMessage = useCallback(async (input: string, model?: string) => {
+  const sendMessage = useCallback(async (input: string, model?: string, imageData?: string) => {
     // Detectar si el usuario dice su nombre
     const detectedName = extractUserName(input);
     if (detectedName) {
@@ -61,12 +61,12 @@ export function useChat(options?: UseChatOptions) {
       toast.success(`¡Hola ${detectedName}! Ya recordaré tu nombre.`);
     }
     
-    const userMsg: Message = { role: "user", content: input };
+    const userMsg: Message = { role: "user", content: input, imageUrl: imageData };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
     
     // Notify about user message
-    options?.onMessageComplete?.("user", input);
+    options?.onMessageComplete?.("user", input, imageData);
 
     // Check if user wants to generate an image
     const isImageRequest = input.toLowerCase().includes("genera una imagen") || 
@@ -146,15 +146,30 @@ export function useChat(options?: UseChatOptions) {
 
     try {
       // Chat es público - no requiere autenticación
+      // Preparar mensajes con imágenes si las hay
+      const messagesForApi = [...messages, userMsg].map(msg => {
+        if (msg.imageUrl) {
+          return {
+            role: msg.role,
+            content: [
+              { type: "text", text: msg.content },
+              { type: "image_url", image_url: { url: msg.imageUrl } }
+            ]
+          };
+        }
+        return { role: msg.role, content: msg.content };
+      });
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          messages: [...messages, userMsg],
+          messages: messagesForApi,
           model: model || selectedModel,
-          userName: userName
+          userName: userName,
+          hasImage: !!imageData
         }),
       });
 

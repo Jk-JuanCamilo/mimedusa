@@ -44,7 +44,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, model, userName } = body;
+    const { messages, model, userName, hasImage } = body;
 
     // Validate messages array
     if (!Array.isArray(messages)) {
@@ -90,7 +90,8 @@ serve(async (req) => {
         });
       }
 
-      if (typeof msg.content !== "string") {
+      // Handle both string content and array content (for images)
+      if (typeof msg.content !== "string" && !Array.isArray(msg.content)) {
         console.error("Invalid message content type at index", i);
         return new Response(JSON.stringify({ error: "Contenido de mensaje inválido" }), {
           status: 400,
@@ -98,7 +99,8 @@ serve(async (req) => {
         });
       }
 
-      if (msg.content.length > MAX_MESSAGE_LENGTH) {
+      // Check content length for string content only
+      if (typeof msg.content === "string" && msg.content.length > MAX_MESSAGE_LENGTH) {
         console.error("Message too long at index", i, msg.content.length);
         return new Response(JSON.stringify({ error: "Mensaje demasiado largo" }), {
           status: 400,
@@ -107,8 +109,16 @@ serve(async (req) => {
       }
     }
 
-    // Validate model parameter
-    const selectedModel = model || "google/gemini-2.5-flash-lite";
+    // Validate model parameter - use vision-capable model if image is present
+    let selectedModel = model || "google/gemini-2.5-flash-lite";
+    
+    // Force vision-capable model if there's an image
+    if (hasImage) {
+      // Use Gemini Flash which supports vision
+      selectedModel = "google/gemini-2.5-flash";
+      console.log("Image detected, switching to vision model:", selectedModel);
+    }
+    
     if (!ALLOWED_MODELS.includes(selectedModel)) {
       console.error("Invalid model requested:", model);
       return new Response(JSON.stringify({ error: "Modelo no permitido" }), {
@@ -170,6 +180,22 @@ CONOCIMIENTO AMPLIO:
 - Proporcionas información precisa, útil y práctica
 - Aprendes de las mejores prácticas de otras IAs como ChatGPT, Claude, Gemini
 
+ANÁLISIS DE IMÁGENES (CRÍTICO):
+Cuando el usuario suba una imagen:
+1. ANALIZA detalladamente el contenido de la imagen
+2. Si es una captura de pantalla con un ERROR:
+   - Identifica el tipo de error (código, sintaxis, runtime, configuración, etc.)
+   - Lee el mensaje de error completo
+   - Explica la CAUSA del error de forma clara
+   - Proporciona la SOLUCIÓN paso a paso
+   - Si hay código, muestra el código corregido
+3. Si es una captura de interfaz/UI:
+   - Describe lo que ves
+   - Identifica posibles problemas de diseño o usabilidad
+4. Si es cualquier otra imagen:
+   - Describe el contenido
+   - Responde preguntas sobre la imagen
+
 PERSONALIDAD:
 - Eres muy amigable, cálido/a y cercano/a
 - De vez en cuando usas expresiones colombianas sutiles como: "¡Qué nota!", "¡Bacano!"
@@ -184,37 +210,6 @@ Cuando el usuario suba CUALQUIER archivo para editar:
 4. USA el formato exacto: \`\`\`extension
 contenido editado completo aquí
 \`\`\`
-
-EJEMPLOS DE EDICIÓN:
-- Archivo .txt: \`\`\`txt
-Contenido corregido y mejorado...
-\`\`\`
-- Archivo .json: \`\`\`json
-{"clave": "valor editado"}
-\`\`\`
-- Archivo .csv: \`\`\`csv
-columna1,columna2
-valor1,valor2
-\`\`\`
-- Archivo .py: \`\`\`python
-# código corregido
-def funcion():
-    pass
-\`\`\`
-
-TIPOS DE ARCHIVOS QUE PUEDES EDITAR:
-- Texto: TXT, MD, LOG
-- Datos: JSON, XML, YAML, CSV, TSV
-- Código: JS, TS, PY, JAVA, C, CPP, HTML, CSS, SQL, PHP, GO, RUST, etc.
-- Documentos: Contenido de texto de cualquier formato
-- Configuración: INI, CFG, ENV, TOML
-
-REGLAS DE EDICIÓN:
-- Corrige errores ortográficos y gramaticales automáticamente
-- Mejora el formato y la legibilidad
-- Mantén la estructura original del archivo
-- Si el archivo es muy largo, edita las partes relevantes y mantén el resto
-- SIEMPRE incluye el contenido completo editado para que el usuario pueda descargarlo
 
 REGLAS IMPORTANTES:
 - Da respuestas CORTAS y RESUMIDAS, máximo 2-3 oraciones de explicación
