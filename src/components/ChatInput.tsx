@@ -5,6 +5,7 @@ import { Send, Loader2, Mic, MicOff } from "lucide-react";
 import { ActionButtons } from "./ActionButtons";
 import { ModelSelector } from "./ModelSelector";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
   onSend: (message: string, model?: string) => void;
@@ -19,12 +20,57 @@ interface ChatInputProps {
   userId?: string;
 }
 
+// Componente de ondas de audio animadas
+function AudioWaveAnimation() {
+  return (
+    <div className="flex items-center gap-1 px-3 py-2 bg-destructive/10 rounded-lg border border-destructive/30">
+      <div className="flex items-center gap-0.5">
+        {[...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className="w-1 bg-destructive rounded-full animate-pulse"
+            style={{
+              height: `${12 + Math.random() * 12}px`,
+              animationDelay: `${i * 0.1}s`,
+              animationDuration: `${0.4 + Math.random() * 0.3}s`,
+            }}
+          />
+        ))}
+      </div>
+      <span className="text-xs text-destructive font-medium ml-2">Escuchando...</span>
+    </div>
+  );
+}
+
 export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelChange, userName, onUserNameChange, onSaveToHistory, isAuthenticated, userId }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [audioLevel, setAudioLevel] = useState<number[]>([3, 5, 8, 5, 3]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const animationRef = useRef<number | null>(null);
   const { toast } = useToast();
+
+  // Animar ondas mientras escucha
+  useEffect(() => {
+    if (isListening) {
+      const animate = () => {
+        setAudioLevel(prev => prev.map(() => 3 + Math.random() * 20));
+        animationRef.current = requestAnimationFrame(animate);
+      };
+      animationRef.current = requestAnimationFrame(animate);
+    } else {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      setAudioLevel([3, 5, 8, 5, 3]);
+    }
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isListening]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -155,8 +201,40 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
         userId={userId}
       />
 
+      {/* Audio Wave Indicator when listening */}
+      {isListening && (
+        <div className="flex items-center justify-center gap-2 py-2">
+          <div className="flex items-center gap-0.5 h-8">
+            {audioLevel.map((height, i) => (
+              <div
+                key={i}
+                className="w-1.5 bg-destructive rounded-full transition-all duration-75"
+                style={{ height: `${height}px` }}
+              />
+            ))}
+          </div>
+          <span className="text-sm text-destructive font-medium animate-pulse">
+            Escuchando tu voz...
+          </span>
+          <div className="flex items-center gap-0.5 h-8">
+            {audioLevel.slice().reverse().map((height, i) => (
+              <div
+                key={i}
+                className="w-1.5 bg-destructive rounded-full transition-all duration-75"
+                style={{ height: `${height}px` }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input Area */}
-      <div className="relative flex items-end gap-2 p-4 bg-muted/70 backdrop-blur-md border border-border/50 rounded-xl">
+      <div className={cn(
+        "relative flex items-end gap-2 p-4 bg-muted/70 backdrop-blur-md border rounded-xl transition-all",
+        isListening 
+          ? "border-destructive/50 ring-2 ring-destructive/20" 
+          : "border-border/50"
+      )}>
         <Textarea
           ref={textareaRef}
           value={input}
@@ -173,7 +251,10 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
           variant={isListening ? "destructive" : "outline"}
           onClick={toggleListening}
           disabled={isLoading || disabled}
-          className="flex-shrink-0 transition-all"
+          className={cn(
+            "flex-shrink-0 transition-all",
+            isListening && "animate-pulse"
+          )}
         >
           {isListening ? (
             <MicOff className="w-4 h-4" />
