@@ -199,6 +199,19 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
     toast.info("CSV eliminado");
   };
 
+  const parseCell = (cell: string): unknown => {
+    const trimmed = cell.trim();
+    
+    // Preserve Excel formulas (starts with =)
+    if (trimmed.startsWith('=')) {
+      return { f: trimmed.substring(1) }; // xlsx-js-style formula format
+    }
+    
+    // Try to convert numeric values (but not formulas)
+    const num = parseFloat(trimmed.replace(/[,$%]/g, ''));
+    return isNaN(num) ? trimmed : num;
+  };
+
   const parseContentToData = (content: string): unknown[][] => {
     // Parse markdown/text table format to array of arrays
     const lines = content.split('\n').filter(line => line.trim());
@@ -212,33 +225,43 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
       if (line.includes('|')) {
         const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
         if (cells.length > 0) {
-          // Try to convert numeric values
-          const parsedCells = cells.map(cell => {
-            const num = parseFloat(cell.replace(/[,$%]/g, ''));
-            return isNaN(num) ? cell : num;
-          });
+          const parsedCells = cells.map(parseCell);
           data.push(parsedCells);
         }
       } else if (line.includes('\t')) {
         // Tab-separated values
         const cells = line.split('\t').map(cell => cell.trim());
-        const parsedCells = cells.map(cell => {
-          const num = parseFloat(cell.replace(/[,$%]/g, ''));
-          return isNaN(num) ? cell : num;
-        });
+        const parsedCells = cells.map(parseCell);
         data.push(parsedCells);
       } else if (line.includes(',')) {
         // CSV format
         const cells = line.split(',').map(cell => cell.trim());
-        const parsedCells = cells.map(cell => {
-          const num = parseFloat(cell.replace(/[,$%]/g, ''));
-          return isNaN(num) ? cell : num;
-        });
+        const parsedCells = cells.map(parseCell);
         data.push(parsedCells);
       }
     }
     
     return data.length > 0 ? data : [['Datos', 'Valor'], ['Ejemplo', 100]];
+  };
+
+  const applyFormulasToWorksheet = (worksheet: XLSX.WorkSheet, data: unknown[][]): void => {
+    // Process each cell to apply formulas
+    for (let r = 0; r < data.length; r++) {
+      for (let c = 0; c < (data[r]?.length || 0); c++) {
+        const cellValue = data[r][c];
+        const cellAddress = XLSX.utils.encode_cell({ r, c });
+        
+        // Check if this is a formula object
+        if (cellValue && typeof cellValue === 'object' && 'f' in cellValue) {
+          const formula = (cellValue as { f: string }).f;
+          worksheet[cellAddress] = { 
+            t: 'n', 
+            f: formula,
+            v: 0  // Placeholder value, Excel will calculate
+          };
+        }
+      }
+    }
   };
 
   const createWorkbookFromContent = (content: string, title: string, themeId?: string): XLSX.WorkBook => {
@@ -258,14 +281,31 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
         const sheetContent = lines.slice(1).join('\n');
         const data = parseContentToData(sheetContent);
         
-        let worksheet = XLSX.utils.aoa_to_sheet(data);
+        // Convert data to plain values for aoa_to_sheet
+        const plainData = data.map(row => 
+          (row as unknown[]).map(cell => 
+            cell && typeof cell === 'object' && 'f' in cell ? '' : cell
+          )
+        );
+        
+        let worksheet = XLSX.utils.aoa_to_sheet(plainData);
+        applyFormulasToWorksheet(worksheet, data);
         worksheet = applyThemeToSheet(worksheet, data, theme);
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.substring(0, 31));
       });
     } else {
       // Single sheet
       const data = parseContentToData(content);
-      let worksheet = XLSX.utils.aoa_to_sheet(data);
+      
+      // Convert data to plain values for aoa_to_sheet
+      const plainData = data.map(row => 
+        (row as unknown[]).map(cell => 
+          cell && typeof cell === 'object' && 'f' in cell ? '' : cell
+        )
+      );
+      
+      let worksheet = XLSX.utils.aoa_to_sheet(plainData);
+      applyFormulasToWorksheet(worksheet, data);
       worksheet = applyThemeToSheet(worksheet, data, theme);
       XLSX.utils.book_append_sheet(workbook, worksheet, title.substring(0, 31));
     }

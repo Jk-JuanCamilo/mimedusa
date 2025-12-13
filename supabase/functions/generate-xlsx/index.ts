@@ -5,66 +5,233 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const templates: Record<string, { title: string; systemPrompt: string; columns: string[] }> = {
+// Fórmulas por categoría
+const formulaCategories = {
+  contabilidad: `
+FÓRMULAS DE CONTABILIDAD (incluir según aplique):
+- Activo Total = Activo Corriente + Activo No Corriente
+- Pasivo Total = Pasivo Corriente + Pasivo No Corriente
+- Patrimonio = Activo Total - Pasivo Total
+- Capital de Trabajo = Activo Corriente - Pasivo Corriente
+- Razón Corriente = Activo Corriente / Pasivo Corriente
+- Prueba Ácida = (Activo Corriente - Inventario) / Pasivo Corriente
+- Rotación de Inventario = Costo de Ventas / Inventario Promedio
+- Días de Inventario = 365 / Rotación de Inventario
+- Rotación de Cuentas por Cobrar = Ventas / Cuentas por Cobrar Promedio
+- Días de Cobro = 365 / Rotación de Cuentas por Cobrar
+- Rotación de Cuentas por Pagar = Compras / Cuentas por Pagar Promedio
+- Días de Pago = 365 / Rotación de Cuentas por Pagar
+- Ciclo de Conversión de Efectivo = Días Inventario + Días Cobro - Días Pago
+- Depreciación Lineal = (Costo - Valor Residual) / Vida Útil
+- Depreciación Acelerada (Suma de Dígitos)
+- Amortización de Préstamo = PMT(tasa, períodos, valor_presente)
+- IVA = Subtotal * Tasa_IVA
+- Retención en la Fuente = Base * Tasa_Retención
+- Utilidad Bruta = Ventas - Costo de Ventas
+- Utilidad Operacional = Utilidad Bruta - Gastos Operacionales
+- Utilidad Neta = Utilidad Operacional - Impuestos`,
+
+  finanzas: `
+FÓRMULAS FINANCIERAS (incluir según aplique):
+- ROI = (Ganancia - Inversión) / Inversión * 100
+- ROE = Utilidad Neta / Patrimonio * 100
+- ROA = Utilidad Neta / Activos Totales * 100
+- Margen Bruto = (Ventas - Costo) / Ventas * 100
+- Margen Operacional = Utilidad Operacional / Ventas * 100
+- Margen Neto = Utilidad Neta / Ventas * 100
+- EBITDA = Utilidad Operacional + Depreciación + Amortización
+- Margen EBITDA = EBITDA / Ventas * 100
+- VAN (NPV) = Suma de Flujos / (1+tasa)^período - Inversión
+- TIR (IRR) = Tasa donde VAN = 0
+- Payback = Inversión / Flujo Anual Promedio
+- Punto de Equilibrio (Unidades) = Costos Fijos / (Precio - Costo Variable)
+- Punto de Equilibrio ($) = Costos Fijos / (1 - Costo Variable / Precio)
+- Apalancamiento Financiero = Deuda / Patrimonio
+- Cobertura de Intereses = EBIT / Gastos por Intereses
+- Valor Futuro = VP * (1 + tasa)^períodos
+- Valor Presente = VF / (1 + tasa)^períodos
+- Tasa Efectiva Anual = (1 + tasa_nominal/n)^n - 1
+- Interés Compuesto = Capital * (1 + tasa)^períodos - Capital
+- Cuota Fija (Amortización) = PMT(tasa, períodos, capital)
+- WACC = (E/V * Re) + (D/V * Rd * (1-T))
+- Beta Apalancado = Beta_Desapalancado * (1 + (1-T) * D/E)
+- Costo de Capital = Rf + Beta * (Rm - Rf)`,
+
+  ventas: `
+FÓRMULAS DE VENTAS (incluir según aplique):
+- Total Venta = Cantidad * Precio Unitario
+- Subtotal = SUMA de Totales
+- Descuento = Subtotal * Porcentaje_Descuento
+- IVA = (Subtotal - Descuento) * Tasa_IVA
+- Total con IVA = Subtotal - Descuento + IVA
+- Comisión = Total Venta * Tasa_Comisión
+- Ganancia = Precio Venta - Costo
+- Margen por Producto = (Precio - Costo) / Precio * 100
+- Ventas Promedio = PROMEDIO(Ventas)
+- Ventas Máximas = MAX(Ventas)
+- Ventas Mínimas = MIN(Ventas)
+- Cantidad Total = SUMA(Cantidades)
+- Ticket Promedio = Total Ventas / Número de Transacciones
+- Tasa de Conversión = Ventas Cerradas / Leads * 100
+- Crecimiento Ventas = (Ventas_Actual - Ventas_Anterior) / Ventas_Anterior * 100
+- Meta Alcanzada = Ventas Reales / Meta * 100
+- Pronóstico de Ventas = TENDENCIA o FORECAST
+- Ventas por Vendedor = SUMAR.SI(Vendedor, Ventas)
+- Ranking = JERARQUIA(Venta, Rango_Ventas)`,
+
+  inventario: `
+FÓRMULAS DE INVENTARIO (incluir según aplique):
+- Valor Total Stock = Stock * Precio Unitario
+- Costo Total Inventario = SUMA(Stock * Costo)
+- Valor de Venta Total = SUMA(Stock * Precio_Venta)
+- Ganancia Potencial = Valor Venta - Costo Total
+- Rotación = Ventas / Inventario Promedio
+- Días de Stock = Inventario / (Ventas / 365)
+- Punto de Reorden = (Demanda Diaria * Lead Time) + Stock Seguridad
+- Stock de Seguridad = Z * Desv_Est * RAIZ(Lead_Time)
+- EOQ (Cantidad Óptima) = RAIZ(2 * Demanda * Costo_Pedido / Costo_Mantener)
+- Costo de Mantener = Stock_Promedio * Costo_Unitario * Tasa_Mantener
+- Valoración FIFO/LIFO/Promedio Ponderado
+- Margen por Producto = (Precio_Venta - Costo) / Precio_Venta * 100
+- Productos Bajo Mínimo = SI(Stock < Stock_Mínimo, "Reabastecer", "OK")
+- ABC Analysis = Clasificación por valor/volumen`,
+
+  nomina: `
+FÓRMULAS DE NÓMINA (incluir según aplique):
+- Salario Bruto = Salario Base + Bonificaciones + Horas Extra
+- Horas Extra Diurnas = Horas * Valor_Hora * 1.25
+- Horas Extra Nocturnas = Horas * Valor_Hora * 1.75
+- Horas Extra Dominicales = Horas * Valor_Hora * 2.0
+- Auxilio de Transporte (si aplica según salario)
+- Salud (Empleado) = Salario Base * 4%
+- Pensión (Empleado) = Salario Base * 4%
+- Total Deducciones = Salud + Pensión + Otros
+- Salario Neto = Salario Bruto - Total Deducciones
+- Aportes Empleador Salud = Salario * 8.5%
+- Aportes Empleador Pensión = Salario * 12%
+- ARL = Salario * Tasa_Riesgo
+- Parafiscales = SENA + ICBF + Caja Compensación
+- Prima = Salario * Días_Trabajados / 360
+- Cesantías = Salario * Días_Trabajados / 360
+- Intereses Cesantías = Cesantías * 12% * Días/360
+- Vacaciones = Salario Base * Días / 720
+- Liquidación Total = Prima + Cesantías + Int.Cesantías + Vacaciones`,
+
+  presupuesto: `
+FÓRMULAS DE PRESUPUESTO (incluir según aplique):
+- Total Presupuestado = SUMA(Montos_Presupuestados)
+- Total Ejecutado = SUMA(Montos_Ejecutados)
+- Variación = Ejecutado - Presupuestado
+- Variación % = (Ejecutado - Presupuestado) / Presupuestado * 100
+- Disponible = Presupuestado - Ejecutado
+- % Ejecución = Ejecutado / Presupuestado * 100
+- Proyección Anual = (Ejecutado / Meses_Transcurridos) * 12
+- Desviación Estándar = DESVEST(Valores)
+- Presupuesto Acumulado = SUMA Acumulativa
+- Tendencia = TENDENCIA(Datos)
+- Estado = SI(Ejecutado > Presupuestado, "Sobrepasado", "Dentro del Presupuesto")`,
+
+  kpi: `
+FÓRMULAS DE KPIs (incluir según aplique):
+- % Cumplimiento = (Valor_Actual / Meta) * 100
+- Variación vs Meta = Valor_Actual - Meta
+- Estado = SI(Cumplimiento >= 100%, "Logrado", SI(Cumplimiento >= 80%, "En Progreso", "Crítico"))
+- Crecimiento = (Actual - Anterior) / Anterior * 100
+- Promedio Móvil = PROMEDIO de últimos N períodos
+- Tendencia = TENDENCIA(Histórico)
+- Índice de Desempeño = SUMA_PONDERADA(KPIs * Pesos)
+- Desviación = (Valor - Promedio) / Desv_Est
+- Ranking = JERARQUIA(Valor, Rango)`,
+
+  facturas: `
+FÓRMULAS DE FACTURACIÓN (incluir según aplique):
+- Subtotal = Cantidad * Precio_Unitario
+- Descuento = Subtotal * %Descuento
+- Base Gravable = Subtotal - Descuento
+- IVA = Base_Gravable * Tasa_IVA
+- Retención Fuente = Base * Tasa_Retención (si aplica)
+- Retención ICA = Base * Tasa_ICA (si aplica)
+- Retención IVA = IVA * %Retención_IVA (si aplica)
+- Total Factura = Base + IVA - Retenciones
+- Días Vencidos = HOY() - Fecha_Vencimiento
+- Estado = SI(Días_Vencidos > 0, "Vencida", "Vigente")
+- Interés Mora = Monto * Tasa_Mora * Días_Vencidos / 365
+- Total con Mora = Monto + Interés_Mora
+- Aging (Antigüedad) = Clasificación por días vencidos`
+};
+
+const templates: Record<string, { title: string; systemPrompt: string; columns: string[]; formulas: string[] }> = {
   "data-analysis": {
     title: "Análisis de Datos",
-    systemPrompt: "Genera una tabla de datos para análisis con columnas relevantes, incluyendo fórmulas sugeridas.",
-    columns: ["ID", "Categoría", "Valor", "Fecha", "Observación"]
+    systemPrompt: "Genera una tabla de datos para análisis con columnas relevantes, incluyendo fórmulas estadísticas y de análisis.",
+    columns: ["ID", "Categoría", "Valor", "Fecha", "Observación"],
+    formulas: ["contabilidad", "finanzas"]
   },
   "finance": {
     title: "Control Financiero",
-    systemPrompt: "Genera una tabla de control financiero con ingresos, gastos, balance y categorías.",
-    columns: ["Fecha", "Descripción", "Categoría", "Ingreso", "Gasto", "Balance"]
+    systemPrompt: "Genera una tabla de control financiero completa con ingresos, gastos, balance, categorías y todas las fórmulas financieras necesarias.",
+    columns: ["Fecha", "Descripción", "Categoría", "Ingreso", "Gasto", "Balance"],
+    formulas: ["contabilidad", "finanzas", "presupuesto"]
   },
   "sales": {
     title: "Seguimiento de Ventas",
-    systemPrompt: "Genera una tabla de ventas con productos, cantidades, precios y totales.",
-    columns: ["Fecha", "Vendedor", "Producto", "Cantidad", "Precio Unitario", "Total"]
+    systemPrompt: "Genera una tabla de ventas profesional con productos, cantidades, precios, totales, comisiones y todas las fórmulas de ventas.",
+    columns: ["Fecha", "Vendedor", "Producto", "Cantidad", "Precio Unitario", "Descuento", "IVA", "Total", "Comisión"],
+    formulas: ["ventas", "facturas"]
   },
   "inventory": {
     title: "Control de Inventario",
-    systemPrompt: "Genera una tabla de inventario con productos, stock, precios.",
-    columns: ["Código", "Producto", "Stock Actual", "Precio Compra", "Precio Venta"]
+    systemPrompt: "Genera una tabla de inventario completa con productos, stock, precios, valoración y fórmulas de gestión de inventario.",
+    columns: ["Código", "Producto", "Stock Actual", "Stock Mínimo", "Precio Compra", "Precio Venta", "Valor Total", "Estado"],
+    formulas: ["inventario", "ventas"]
   },
   "budget": {
     title: "Presupuesto",
-    systemPrompt: "Genera una tabla de presupuesto con categorías y montos.",
-    columns: ["Categoría", "Presupuestado", "Ejecutado", "Variación"]
+    systemPrompt: "Genera una tabla de presupuesto detallada con categorías, montos, variaciones y fórmulas de control presupuestario.",
+    columns: ["Categoría", "Subcategoría", "Presupuestado", "Ejecutado", "Variación", "% Ejecución", "Estado"],
+    formulas: ["presupuesto", "finanzas"]
   },
   "report": {
     title: "Informe",
-    systemPrompt: "Genera una tabla estructurada para informes.",
-    columns: ["Período", "Métrica", "Valor Actual", "Valor Anterior"]
+    systemPrompt: "Genera una tabla estructurada para informes con métricas, comparativos y fórmulas de análisis.",
+    columns: ["Período", "Métrica", "Valor Actual", "Valor Anterior", "Variación", "% Cambio"],
+    formulas: ["finanzas", "kpi"]
   },
   "project": {
     title: "Gestión de Proyecto",
-    systemPrompt: "Genera una tabla de seguimiento de proyecto.",
-    columns: ["Tarea", "Responsable", "Fecha Inicio", "Fecha Fin", "Estado"]
+    systemPrompt: "Genera una tabla de seguimiento de proyecto con tareas, responsables, fechas, costos y fórmulas de gestión.",
+    columns: ["Tarea", "Responsable", "Fecha Inicio", "Fecha Fin", "Días", "Costo Estimado", "Costo Real", "Variación", "Estado"],
+    formulas: ["presupuesto", "kpi"]
   },
   "payroll": {
     title: "Nómina",
-    systemPrompt: "Genera una tabla de nómina con empleados y salarios.",
-    columns: ["Empleado", "Cargo", "Salario Base", "Deducciones", "Neto"]
+    systemPrompt: "Genera una tabla de nómina completa con empleados, salarios, deducciones, aportes y todas las fórmulas de nómina colombiana.",
+    columns: ["Empleado", "Cargo", "Salario Base", "Aux. Transporte", "Horas Extra", "Bonificaciones", "Salud", "Pensión", "Otras Deducciones", "Neto a Pagar"],
+    formulas: ["nomina"]
   },
   "invoice-tracker": {
     title: "Seguimiento de Facturas",
-    systemPrompt: "Genera una tabla de facturas.",
-    columns: ["No. Factura", "Cliente", "Fecha", "Monto", "Estado"]
+    systemPrompt: "Genera una tabla de facturas completa con clientes, montos, vencimientos, estados y fórmulas de facturación.",
+    columns: ["No. Factura", "Cliente", "Fecha Emisión", "Fecha Vencimiento", "Subtotal", "IVA", "Retenciones", "Total", "Días Vencidos", "Estado"],
+    formulas: ["facturas", "contabilidad"]
   },
   "kpi": {
     title: "Indicadores KPI",
-    systemPrompt: "Genera una tabla de KPIs.",
-    columns: ["KPI", "Meta", "Valor Actual", "Estado"]
+    systemPrompt: "Genera una tabla de KPIs profesional con indicadores, metas, valores actuales, cumplimiento y fórmulas de seguimiento.",
+    columns: ["KPI", "Área", "Meta", "Valor Actual", "% Cumplimiento", "Tendencia", "Estado"],
+    formulas: ["kpi", "finanzas"]
   },
   "macros": {
     title: "Plantilla con Macros",
-    systemPrompt: "Genera una tabla con datos de ejemplo y código VBA para macros.",
-    columns: ["Dato 1", "Dato 2", "Dato 3", "Resultado"]
+    systemPrompt: "Genera una tabla con datos de ejemplo, fórmulas avanzadas y código VBA para automatización.",
+    columns: ["Dato 1", "Dato 2", "Dato 3", "Fórmula", "Resultado"],
+    formulas: ["contabilidad", "finanzas", "ventas"]
   },
   "custom": {
     title: "Personalizado",
-    systemPrompt: "Genera una tabla personalizada según la descripción.",
-    columns: []
+    systemPrompt: "Genera una tabla personalizada según la descripción, incluyendo las fórmulas más relevantes para el caso.",
+    columns: [],
+    formulas: ["contabilidad", "finanzas", "ventas", "inventario", "nomina", "presupuesto", "kpi", "facturas"]
   }
 };
 
@@ -109,35 +276,69 @@ serve(async (req) => {
 
     const hasImportedData = importedData && importedData.trim().length > 0;
 
-    const chartInstructions = includeCharts ? `
-También crea una sección adicional separada con "--- HOJA: Gráficos" que incluya:
-- Resumen con totales y promedios
-- Datos agregados por categoría listos para gráficos` : '';
+    // Build formulas section based on template type
+    const relevantFormulas = template.formulas
+      .map(cat => formulaCategories[cat as keyof typeof formulaCategories])
+      .filter(Boolean)
+      .join('\n\n');
 
-    const systemPrompt = `Eres un experto en Excel. ${template.systemPrompt}
+    const chartInstructions = includeCharts ? `
+También crea una sección adicional separada con "--- HOJA: Resumen y Análisis" que incluya:
+- Resumen con totales, promedios, máximos, mínimos
+- KPIs calculados automáticamente
+- Datos agregados por categoría listos para gráficos
+- Fórmulas de tendencia y proyección` : '';
+
+    const systemPrompt = `Eres un experto en Excel, contabilidad, finanzas y análisis de datos. ${template.systemPrompt}
 
 REGLAS OBLIGATORIAS:
 1. Genera datos en formato tabla usando | (pipe) como separador
 2. Primera fila = encabezados
-3. Datos realistas y útiles
+3. Datos realistas, profesionales y útiles
 4. Para múltiples hojas usa "--- HOJA: NombreHoja"
-${hasImportedData ? '5. Usa los datos CSV importados como base' : ''}
+5. INCLUYE TODAS LAS FÓRMULAS RELEVANTES en notación Excel (=SUMA, =PROMEDIO, =SI, etc.)
+6. Agrega una fila de TOTALES con fórmulas al final de cada tabla numérica
+7. Incluye columnas calculadas con fórmulas donde sea apropiado
+${hasImportedData ? '8. Usa los datos CSV importados como base y aplica las fórmulas' : ''}
 ${chartInstructions}
 
-${template.columns.length > 0 ? `Columnas: ${template.columns.join(', ')}` : ''}
+${relevantFormulas}
 
-FORMATO:
-| Col1 | Col2 | Col3 |
-| dato1 | dato2 | 100 |
-| dato3 | dato4 | 200 |`;
+FÓRMULAS EXCEL COMUNES A USAR:
+- =SUMA(rango) para totales
+- =PROMEDIO(rango) para promedios
+- =MAX(rango), =MIN(rango) para extremos
+- =SI(condición, verdadero, falso) para condicionales
+- =BUSCARV(valor, rango, columna, falso) para búsquedas
+- =SUMAR.SI(rango_criterio, criterio, rango_suma) para sumas condicionales
+- =CONTAR.SI(rango, criterio) para conteos
+- =REDONDEAR(número, decimales) para redondeos
+- =CONCATENAR() o & para unir texto
+- =HOY() para fecha actual
+- =DIAS(fecha_fin, fecha_inicio) para diferencia de días
 
-    let userMessage = `Genera Excel para: ${description}`;
+${template.columns.length > 0 ? `Columnas sugeridas: ${template.columns.join(', ')}` : ''}
+
+FORMATO EJEMPLO:
+--- HOJA: Datos
+| Producto | Cantidad | Precio | Total | Margen |
+| Producto A | 10 | 100 | =B2*C2 | =D2*0.3 |
+| Producto B | 5 | 200 | =B3*C3 | =D3*0.3 |
+| TOTAL | =SUMA(B2:B3) | =PROMEDIO(C2:C3) | =SUMA(D2:D3) | =SUMA(E2:E3) |`;
+
+    let userMessage = `Genera un Excel profesional para: ${description}
+
+IMPORTANTE: 
+- Incluye TODAS las fórmulas necesarias para cálculos automáticos
+- Agrega filas de totales con =SUMA(), =PROMEDIO(), etc.
+- Incluye columnas calculadas donde aplique
+- Usa formato de fórmula Excel real (=FORMULA)`;
     
     if (hasImportedData) {
-      userMessage += `\n\nDATOS CSV:\n${importedData.substring(0, 5000)}`;
+      userMessage += `\n\nDATOS CSV IMPORTADOS (usar como base):\n${importedData.substring(0, 8000)}`;
     }
 
-    console.log("generate-xlsx: Calling AI API");
+    console.log("generate-xlsx: Calling AI API with formulas");
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

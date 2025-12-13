@@ -453,8 +453,12 @@ export const applyThemeToSheet = (
     for (let r = range.s.r; r <= range.e.r; r++) {
       const cellValue = data[r]?.[c];
       if (cellValue !== undefined && cellValue !== null) {
-        const cellLength = String(cellValue).length;
-        maxWidth = Math.max(maxWidth, Math.min(cellLength + 4, 45));
+        // Handle formula objects
+        const displayValue = typeof cellValue === 'object' && cellValue !== null && 'f' in cellValue
+          ? `=${(cellValue as { f: string }).f}`
+          : String(cellValue);
+        const cellLength = displayValue.length;
+        maxWidth = Math.max(maxWidth, Math.min(cellLength + 4, 50));
       }
     }
     colWidths.push({ wch: maxWidth });
@@ -474,27 +478,36 @@ export const applyThemeToSheet = (
         } else {
           // Data rows with alternating colors
           const baseStyle = r % 2 === 0 ? theme.evenRowStyle : theme.oddRowStyle;
+          const headerValue = String(data[0]?.[c] || '').toLowerCase();
           
-          // Check if cell is a number for special formatting
-          if (typeof cell.v === 'number') {
-            const headerValue = String(data[0]?.[c] || '').toLowerCase();
-            
-            // Detect currency columns
-            const isCurrency = headerValue.includes('precio') || 
-                              headerValue.includes('total') || 
-                              headerValue.includes('monto') || 
-                              headerValue.includes('salario') ||
-                              headerValue.includes('ingreso') || 
-                              headerValue.includes('gasto') ||
-                              headerValue.includes('costo') || 
-                              headerValue.includes('valor') ||
-                              headerValue.includes('neto') || 
-                              headerValue.includes('balance') ||
-                              headerValue.includes('pago') ||
-                              headerValue.includes('deuda') ||
-                              headerValue.includes('credito') ||
-                              headerValue.includes('debito');
-            
+          // Check if cell has a formula
+          const hasFormula = cell.f !== undefined;
+          
+          // Detect currency columns
+          const isCurrency = headerValue.includes('precio') || 
+                            headerValue.includes('total') || 
+                            headerValue.includes('monto') || 
+                            headerValue.includes('salario') ||
+                            headerValue.includes('ingreso') || 
+                            headerValue.includes('gasto') ||
+                            headerValue.includes('costo') || 
+                            headerValue.includes('valor') ||
+                            headerValue.includes('neto') || 
+                            headerValue.includes('balance') ||
+                            headerValue.includes('pago') ||
+                            headerValue.includes('deuda') ||
+                            headerValue.includes('credito') ||
+                            headerValue.includes('debito') ||
+                            headerValue.includes('subtotal') ||
+                            headerValue.includes('iva') ||
+                            headerValue.includes('descuento') ||
+                            headerValue.includes('comision') ||
+                            headerValue.includes('ganancia') ||
+                            headerValue.includes('margen') ||
+                            headerValue.includes('utilidad');
+          
+          // Check if cell is a number or formula for special formatting
+          if (typeof cell.v === 'number' || hasFormula) {
             cell.s = {
               ...baseStyle,
               numFmt: isCurrency ? theme.currencyFormat : theme.numberFormat,
