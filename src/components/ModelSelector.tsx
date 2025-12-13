@@ -14,7 +14,7 @@ export type AIModel = {
   provider: string;
 };
 
-// Modelos de Chat
+// Modelos de Chat (solo los soportados por Lovable AI Gateway)
 export const CHAT_MODELS: AIModel[] = [
   {
     id: "google/gemini-2.5-flash-lite",
@@ -57,30 +57,6 @@ export const CHAT_MODELS: AIModel[] = [
     name: "GPT-5 Nano",
     description: "Velocidad máxima",
     provider: "OpenAI"
-  },
-  {
-    id: "claude-sonnet-4-5",
-    name: "Claude Sonnet 4.5",
-    description: "Inteligente y razonamiento superior",
-    provider: "Anthropic"
-  },
-  {
-    id: "claude-opus-4-1-20250805",
-    name: "Claude Opus 4.1",
-    description: "Más inteligente y costoso",
-    provider: "Anthropic"
-  },
-  {
-    id: "claude-sonnet-4-20250514",
-    name: "Claude Sonnet 4",
-    description: "Alto rendimiento",
-    provider: "Anthropic"
-  },
-  {
-    id: "claude-3-5-haiku-20241022",
-    name: "Claude 3.5 Haiku",
-    description: "El más rápido de Claude",
-    provider: "Anthropic"
   },
 ];
 

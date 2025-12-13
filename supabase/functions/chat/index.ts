@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Allowed models list for validation
+// Allowed models list for validation (only Lovable AI Gateway supported models)
 const ALLOWED_MODELS = [
   "google/gemini-2.5-flash-lite",
   "google/gemini-2.5-flash",
@@ -14,14 +14,6 @@ const ALLOWED_MODELS = [
   "openai/gpt-5",
   "openai/gpt-5-mini",
   "openai/gpt-5-nano",
-  "anthropic/claude-opus-4.1",
-  "anthropic/claude-sonnet-4.5",
-  "anthropic/claude-sonnet-4",
-  "anthropic/claude-haiku-3.5",
-  "claude-sonnet-4-5",
-  "claude-opus-4-1-20250805",
-  "claude-sonnet-4-20250514",
-  "claude-3-5-haiku-20241022",
 ];
 
 const MAX_MESSAGE_LENGTH = 10000; // Max characters per message
