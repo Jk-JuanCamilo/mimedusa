@@ -19,11 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Table, Loader2, Download, Eye, ArrowLeft, X, Edit, RefreshCw, Upload, FileSpreadsheet, Palette } from "lucide-react";
+import { Table, Loader2, Download, Eye, ArrowLeft, X, Edit, RefreshCw, Upload, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import XLSX from "xlsx-js-style";
-import { excelThemes, getThemeById, applyThemeToSheet, type ExcelTheme } from "@/utils/excelThemes";
+import { getThemeById, applyThemeToSheet, getRandomTheme } from "@/utils/excelThemes";
 
 interface XLSXGeneratorDialogProps {
   disabled?: boolean;
@@ -69,7 +69,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   const [importedCsvData, setImportedCsvData] = useState<unknown[][] | null>(null);
   const [csvFileName, setCsvFileName] = useState<string>("");
   const [includeCharts, setIncludeCharts] = useState(true);
-  const [selectedTheme, setSelectedTheme] = useState<string>("corporate-blue");
+  
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   const handleClose = () => {
@@ -241,9 +241,9 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
     return data.length > 0 ? data : [['Datos', 'Valor'], ['Ejemplo', 100]];
   };
 
-  const createWorkbookFromContent = (content: string, title: string, themeId: string = selectedTheme): XLSX.WorkBook => {
+  const createWorkbookFromContent = (content: string, title: string, themeId?: string): XLSX.WorkBook => {
     const workbook = XLSX.utils.book_new();
-    const theme = getThemeById(themeId);
+    const theme = themeId ? getThemeById(themeId) : getRandomTheme();
     
     // Split content by sheet markers or create single sheet
     const sheetSections = content.split(/---\s*HOJA:\s*/i);
@@ -317,8 +317,9 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
       const { content, title } = response.data;
       const finalTitle = customTitle || title || templateOptions.find(t => t.value === templateType)?.label || "Documento";
       
-      // Create workbook from content
-      const workbook = createWorkbookFromContent(content, finalTitle);
+      // Create workbook from content with random theme
+      const randomTheme = getRandomTheme();
+      const workbook = createWorkbookFromContent(content, finalTitle, randomTheme.id);
       
       // Get JSON representation for preview
       const jsonData: Record<string, unknown[][]> = {};
@@ -333,9 +334,9 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
         workbook,
         content,
         title: finalTitle,
+        themeId: randomTheme.id,
         filename,
-        jsonData,
-        themeId: selectedTheme
+        jsonData
       });
 
       toast.success("¡Vista previa lista!");
@@ -586,35 +587,6 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                       <div className="flex flex-col">
                         <span>{option.label}</span>
                         <span className="text-xs text-muted-foreground">{option.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Theme Selector */}
-            <div className="space-y-2">
-              <label className="text-sm text-muted-foreground flex items-center gap-2">
-                <Palette className="w-4 h-4" />
-                Diseño visual del documento
-              </label>
-              <Select value={selectedTheme} onValueChange={setSelectedTheme}>
-                <SelectTrigger className="bg-background/50 border-border">
-                  <SelectValue placeholder="Selecciona un diseño..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {excelThemes.map((theme) => (
-                    <SelectItem key={theme.id} value={theme.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-sm border" 
-                          style={{ backgroundColor: theme.accentColor }}
-                        />
-                        <div className="flex flex-col">
-                          <span>{theme.name}</span>
-                          <span className="text-xs text-muted-foreground">{theme.description}</span>
-                        </div>
                       </div>
                     </SelectItem>
                   ))}
