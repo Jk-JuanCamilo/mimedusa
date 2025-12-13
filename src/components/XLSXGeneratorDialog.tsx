@@ -19,10 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Table, Loader2, Download, Eye, ArrowLeft, X, Edit, RefreshCw, Upload, FileSpreadsheet } from "lucide-react";
+import { Table, Loader2, Download, Eye, ArrowLeft, X, Edit, RefreshCw, Upload, FileSpreadsheet, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import XLSX from "xlsx-js-style";
+import { excelThemes, getThemeById, applyThemeToSheet, type ExcelTheme } from "@/utils/excelThemes";
 
 interface XLSXGeneratorDialogProps {
   disabled?: boolean;
@@ -36,6 +37,7 @@ interface PreviewData {
   title: string;
   filename: string;
   jsonData: Record<string, unknown[][]>;
+  themeId: string;
 }
 
 const templateOptions = [
@@ -67,6 +69,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   const [importedCsvData, setImportedCsvData] = useState<unknown[][] | null>(null);
   const [csvFileName, setCsvFileName] = useState<string>("");
   const [includeCharts, setIncludeCharts] = useState(true);
+  const [selectedTheme, setSelectedTheme] = useState<string>("corporate-blue");
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   const handleClose = () => {
@@ -238,120 +241,9 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
     return data.length > 0 ? data : [['Datos', 'Valor'], ['Ejemplo', 100]];
   };
 
-  const createWorkbookFromContent = (content: string, title: string): XLSX.WorkBook => {
+  const createWorkbookFromContent = (content: string, title: string, themeId: string = selectedTheme): XLSX.WorkBook => {
     const workbook = XLSX.utils.book_new();
-    
-    // Professional color palette
-    const headerStyle = {
-      fill: { fgColor: { rgb: "4F46E5" } }, // Indigo
-      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
-      alignment: { horizontal: "center", vertical: "center" },
-      border: {
-        top: { style: "medium", color: { rgb: "312E81" } },
-        bottom: { style: "medium", color: { rgb: "312E81" } },
-        left: { style: "thin", color: { rgb: "312E81" } },
-        right: { style: "thin", color: { rgb: "312E81" } }
-      }
-    };
-
-    const evenRowStyle = {
-      fill: { fgColor: { rgb: "F3F4F6" } }, // Light gray
-      font: { sz: 11 },
-      alignment: { vertical: "center" },
-      border: {
-        top: { style: "thin", color: { rgb: "E5E7EB" } },
-        bottom: { style: "thin", color: { rgb: "E5E7EB" } },
-        left: { style: "thin", color: { rgb: "E5E7EB" } },
-        right: { style: "thin", color: { rgb: "E5E7EB" } }
-      }
-    };
-
-    const oddRowStyle = {
-      fill: { fgColor: { rgb: "FFFFFF" } }, // White
-      font: { sz: 11 },
-      alignment: { vertical: "center" },
-      border: {
-        top: { style: "thin", color: { rgb: "E5E7EB" } },
-        bottom: { style: "thin", color: { rgb: "E5E7EB" } },
-        left: { style: "thin", color: { rgb: "E5E7EB" } },
-        right: { style: "thin", color: { rgb: "E5E7EB" } }
-      }
-    };
-
-    const numberStyle = {
-      numFmt: "#,##0.00",
-      alignment: { horizontal: "right", vertical: "center" }
-    };
-
-    const currencyStyle = {
-      numFmt: '"$"#,##0.00',
-      alignment: { horizontal: "right", vertical: "center" }
-    };
-
-    const applyStylesToSheet = (worksheet: XLSX.WorkSheet, data: unknown[][]) => {
-      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-      
-      // Calculate column widths based on content
-      const colWidths: { wch: number }[] = [];
-      for (let c = range.s.c; c <= range.e.c; c++) {
-        let maxWidth = 10;
-        for (let r = range.s.r; r <= range.e.r; r++) {
-          const cellValue = data[r]?.[c];
-          if (cellValue !== undefined && cellValue !== null) {
-            const cellLength = String(cellValue).length;
-            maxWidth = Math.max(maxWidth, Math.min(cellLength + 2, 40));
-          }
-        }
-        colWidths.push({ wch: maxWidth });
-      }
-      worksheet['!cols'] = colWidths;
-
-      // Apply styles to each cell
-      for (let r = range.s.r; r <= range.e.r; r++) {
-        for (let c = range.s.c; c <= range.e.c; c++) {
-          const cellAddress = XLSX.utils.encode_cell({ r, c });
-          const cell = worksheet[cellAddress];
-          
-          if (cell) {
-            if (r === 0) {
-              // Header row
-              cell.s = headerStyle;
-            } else {
-              // Data rows with alternating colors
-              const baseStyle = r % 2 === 0 ? evenRowStyle : oddRowStyle;
-              
-              // Check if cell is a number for special formatting
-              if (typeof cell.v === 'number') {
-                const cellValue = data[r]?.[c];
-                const headerValue = String(data[0]?.[c] || '').toLowerCase();
-                
-                // Detect currency columns
-                if (headerValue.includes('precio') || headerValue.includes('total') || 
-                    headerValue.includes('monto') || headerValue.includes('salario') ||
-                    headerValue.includes('ingreso') || headerValue.includes('gasto') ||
-                    headerValue.includes('costo') || headerValue.includes('valor') ||
-                    headerValue.includes('neto') || headerValue.includes('balance')) {
-                  cell.s = { ...baseStyle, ...currencyStyle };
-                } else {
-                  cell.s = { ...baseStyle, ...numberStyle };
-                }
-              } else {
-                cell.s = baseStyle;
-              }
-            }
-          }
-        }
-      }
-
-      // Add row heights
-      const rowHeights: { hpt: number }[] = [];
-      for (let r = range.s.r; r <= range.e.r; r++) {
-        rowHeights.push({ hpt: r === 0 ? 25 : 20 }); // Header taller
-      }
-      worksheet['!rows'] = rowHeights;
-
-      return worksheet;
-    };
+    const theme = getThemeById(themeId);
     
     // Split content by sheet markers or create single sheet
     const sheetSections = content.split(/---\s*HOJA:\s*/i);
@@ -367,14 +259,14 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
         const data = parseContentToData(sheetContent);
         
         let worksheet = XLSX.utils.aoa_to_sheet(data);
-        worksheet = applyStylesToSheet(worksheet, data);
+        worksheet = applyThemeToSheet(worksheet, data, theme);
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.substring(0, 31));
       });
     } else {
       // Single sheet
       const data = parseContentToData(content);
       let worksheet = XLSX.utils.aoa_to_sheet(data);
-      worksheet = applyStylesToSheet(worksheet, data);
+      worksheet = applyThemeToSheet(worksheet, data, theme);
       XLSX.utils.book_append_sheet(workbook, worksheet, title.substring(0, 31));
     }
     
@@ -442,7 +334,8 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
         content,
         title: finalTitle,
         filename,
-        jsonData
+        jsonData,
+        themeId: selectedTheme
       });
 
       toast.success("¡Vista previa lista!");
@@ -494,7 +387,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
     
     setIsRegenerating(true);
     try {
-      const workbook = createWorkbookFromContent(editedContent, preview.title);
+      const workbook = createWorkbookFromContent(editedContent, preview.title, preview.themeId);
       
       const jsonData: Record<string, unknown[][]> = {};
       workbook.SheetNames.forEach(sheetName => {
@@ -693,6 +586,35 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                       <div className="flex flex-col">
                         <span>{option.label}</span>
                         <span className="text-xs text-muted-foreground">{option.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Theme Selector */}
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground flex items-center gap-2">
+                <Palette className="w-4 h-4" />
+                Diseño visual del documento
+              </label>
+              <Select value={selectedTheme} onValueChange={setSelectedTheme}>
+                <SelectTrigger className="bg-background/50 border-border">
+                  <SelectValue placeholder="Selecciona un diseño..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {excelThemes.map((theme) => (
+                    <SelectItem key={theme.id} value={theme.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-4 h-4 rounded-sm border" 
+                          style={{ backgroundColor: theme.accentColor }}
+                        />
+                        <div className="flex flex-col">
+                          <span>{theme.name}</span>
+                          <span className="text-xs text-muted-foreground">{theme.description}</span>
+                        </div>
                       </div>
                     </SelectItem>
                   ))}
