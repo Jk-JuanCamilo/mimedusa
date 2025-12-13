@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_rate_limits: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -96,12 +117,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_api_rate_limit: {
+        Args: {
+          p_endpoint: string
+          p_ip_address: string
+          p_max_requests?: number
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
       check_image_edit_rate_limit:
         | { Args: { p_user_id: string }; Returns: boolean }
         | {
             Args: { p_ip_address: string; p_user_id: string }
             Returns: boolean
           }
+      record_api_request: {
+        Args: { p_endpoint: string; p_ip_address: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

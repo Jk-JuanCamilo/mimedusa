@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -151,6 +152,41 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Check rate limit (10 requests per minute for DOCX generation)
+    const { data: isAllowed, error: rateLimitError } = await supabase
+      .rpc('check_api_rate_limit', { 
+        p_ip_address: clientIp, 
+        p_endpoint: 'generate-docx',
+        p_max_requests: 10,
+        p_window_minutes: 1
+      });
+    
+    if (rateLimitError) {
+      console.error('Rate limit check error:', rateLimitError);
+    }
+    
+    if (isAllowed === false) {
+      console.log(`Rate limit exceeded for IP: ${clientIp}`);
+      return new Response(
+        JSON.stringify({ error: 'Demasiadas solicitudes. Por favor espera un momento.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Record this request (fire and forget)
+    void supabase.rpc('record_api_request', { 
+      p_ip_address: clientIp, 
+      p_endpoint: 'generate-docx' 
+    });
     const body = await req.json();
     console.log("generate-docx: Body parsed");
     
