@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { Bot, User, Download, FileText, FileSpreadsheet } from "lucide-react";
+import { User, Download, FileText, FileSpreadsheet } from "lucide-react";
+import medussaLogo from "@/assets/medussa-logo.png";
 import { Button } from "@/components/ui/button";
 import { useCallback, useMemo } from "react";
 import { Document, Packer, Paragraph, TextRun } from "docx";
@@ -202,13 +203,17 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
     >
       <div
         className={cn(
-          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden",
           isUser 
             ? "bg-primary/20 text-primary" 
-            : "bg-accent/20 text-accent glow-accent"
+            : "bg-transparent"
         )}
       >
-        {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+        {isUser ? (
+          <User className="w-4 h-4" />
+        ) : (
+          <img src={medussaLogo} alt="Medussa IA" className="w-8 h-8 object-cover" />
+        )}
       </div>
       <div className="flex-1 space-y-2 overflow-hidden">
         <p className={cn(
