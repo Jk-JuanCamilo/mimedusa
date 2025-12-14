@@ -203,16 +203,20 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
     >
       <div
         className={cn(
-          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden",
+          "flex-shrink-0 rounded-full flex items-center justify-center overflow-hidden",
           isUser 
-            ? "bg-primary/20 text-primary" 
-            : "bg-transparent"
+            ? "w-8 h-8 bg-primary/20 text-primary" 
+            : "w-12 h-12 bg-transparent"
         )}
       >
         {isUser ? (
           <User className="w-4 h-4" />
         ) : (
-          <img src={medussaLogo} alt="Medussa IA" className="w-8 h-8 object-cover" />
+          <img 
+            src={medussaLogo} 
+            alt="Medussa IA" 
+            className="w-12 h-12 object-cover animate-[float_3s_ease-in-out_infinite]" 
+          />
         )}
       </div>
       <div className="flex-1 space-y-2 overflow-hidden">
