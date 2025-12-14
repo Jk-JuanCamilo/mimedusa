@@ -183,7 +183,7 @@ serve(async (req) => {
     
     // Construir instrucción personalizada si hay nombre
     const nameInstruction = userName 
-      ? `\nNOMBRE: ${userName} 💜\n- Llámale "${userName}" de forma cariñosa y natural\n- Recuerda que estás hablando con ${userName} durante TODA la conversación\n- Hazle sentir especial mencionando su nombre de vez en cuando`
+      ? `\nNOMBRE DEL USUARIO: ${userName}\n- Recuerda que estás hablando con ${userName} durante toda la conversación\n- NO uses su nombre en cada respuesta - solo ocasionalmente (cada 3-4 respuestas) para que sea natural\n- Cuando lo uses, hazlo de forma cálida y genuina, no forzada`
       : "";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -246,9 +246,7 @@ contenido editado completo aquí
 - Usa viñetas o listas cuando sea apropiado
 - Siempre sé servicial y proactiva
 ${nameInstruction ? `
-🧡 IMPORTANTE - NOMBRE DEL USUARIO:${nameInstruction}
-- SIEMPRE usa su nombre de forma cálida y natural
-- Hazle sentir especial y recordada` : ''}
+🧡 USUARIO:${nameInstruction}` : ''}
 
 ¡Sé la IA más amigable y práctica que existe! 🚀`
           },
