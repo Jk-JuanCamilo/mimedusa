@@ -302,7 +302,7 @@ REGLAS:
   } catch (error) {
     console.error("generate-docx: Error", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Error desconocido" }),
+      JSON.stringify({ error: "Ocurrió un error inesperado. Por favor intenta de nuevo." }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
