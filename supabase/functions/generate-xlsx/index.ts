@@ -161,78 +161,334 @@ FÓRMULAS DE FACTURACIÓN (incluir según aplique):
 - Aging (Antigüedad) = Clasificación por días vencidos`
 };
 
-const templates: Record<string, { title: string; systemPrompt: string; columns: string[]; formulas: string[] }> = {
+const templates: Record<string, { title: string; systemPrompt: string; columns: string[]; formulas: string[]; structure: string }> = {
   "data-analysis": {
     title: "Análisis de Datos",
     systemPrompt: "Genera una tabla de datos para análisis con columnas relevantes, incluyendo fórmulas estadísticas y de análisis.",
     columns: ["ID", "Categoría", "Valor", "Fecha", "Observación"],
-    formulas: ["contabilidad", "finanzas"]
+    formulas: ["contabilidad", "finanzas"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - ANÁLISIS DE DATOS:
+--- HOJA: Datos Principales
+| ID | Categoría | Subcategoría | Valor | Cantidad | Fecha | Observación |
+(Mínimo 15 filas de datos realistas)
+| RESUMEN | | | =SUMA(D2:D16) | =SUMA(E2:E16) | | |
+
+--- HOJA: Análisis Estadístico
+| Métrica | Valor | Fórmula |
+| Total | =SUMA('Datos Principales'!D:D) | SUMA |
+| Promedio | =PROMEDIO('Datos Principales'!D:D) | PROMEDIO |
+| Máximo | =MAX('Datos Principales'!D:D) | MAX |
+| Mínimo | =MIN('Datos Principales'!D:D) | MIN |
+| Conteo | =CONTARA('Datos Principales'!A:A)-1 | CONTARA |
+| Desviación | =DESVEST('Datos Principales'!D:D) | DESVEST |
+
+--- HOJA: Resumen por Categoría
+| Categoría | Total | Porcentaje |
+(Agregar =SUMAR.SI para cada categoría)`
   },
   "finance": {
     title: "Control Financiero",
     systemPrompt: "Genera una tabla de control financiero completa con ingresos, gastos, balance, categorías y todas las fórmulas financieras necesarias.",
     columns: ["Fecha", "Descripción", "Categoría", "Ingreso", "Gasto", "Balance"],
-    formulas: ["contabilidad", "finanzas", "presupuesto"]
+    formulas: ["contabilidad", "finanzas", "presupuesto"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - CONTROL FINANCIERO:
+--- HOJA: Movimientos
+| Fecha | Descripción | Categoría | Tipo | Ingreso | Gasto | Balance |
+(Mínimo 20 filas con movimientos realistas)
+| TOTALES | | | | =SUMA(E2:E21) | =SUMA(F2:F21) | =E22-F22 |
+
+--- HOJA: Resumen Mensual
+| Mes | Ingresos | Gastos | Balance | Ahorro % |
+| Enero | =SUMAR.SI(...) | =SUMAR.SI(...) | =B2-C2 | =D2/B2*100 |
+(12 meses)
+| TOTAL ANUAL | =SUMA(B2:B13) | =SUMA(C2:C13) | =SUMA(D2:D13) | =D14/B14*100 |
+
+--- HOJA: Categorías
+| Categoría | Presupuesto | Gastado | Disponible | % Usado |
+(Categorías: Alimentación, Transporte, Servicios, Entretenimiento, Salud, Educación, Otros)
+| TOTAL | =SUMA(B:B) | =SUMA(C:C) | =SUMA(D:D) | =C9/B9*100 |
+
+--- HOJA: Indicadores
+| Indicador | Valor | Estado |
+| Tasa de Ahorro | =formula | =SI(B2>20%,"Excelente",SI(B2>10%,"Bueno","Mejorar")) |
+| Ratio Gastos/Ingresos | =formula | |
+| Balance Promedio | =formula | |`
   },
   "sales": {
     title: "Seguimiento de Ventas",
     systemPrompt: "Genera una tabla de ventas profesional con productos, cantidades, precios, totales, comisiones y todas las fórmulas de ventas.",
     columns: ["Fecha", "Vendedor", "Producto", "Cantidad", "Precio Unitario", "Descuento", "IVA", "Total", "Comisión"],
-    formulas: ["ventas", "facturas"]
+    formulas: ["ventas", "facturas"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - VENTAS:
+--- HOJA: Registro de Ventas
+| No. | Fecha | Cliente | Vendedor | Producto | Cantidad | Precio Unit. | Subtotal | Descuento % | Descuento $ | IVA 19% | Total | Comisión 5% |
+(Mínimo 20 ventas con datos realistas)
+| TOTALES | | | | | =SUMA(F:F) | =PROMEDIO(G:G) | =SUMA(H:H) | | =SUMA(J:J) | =SUMA(K:K) | =SUMA(L:L) | =SUMA(M:M) |
+
+--- HOJA: Ranking Vendedores
+| Vendedor | Ventas Totales | Unidades | Comisión Total | Ticket Promedio | Ranking |
+(Usar SUMAR.SI para cada vendedor)
+
+--- HOJA: Productos Más Vendidos
+| Producto | Unidades Vendidas | Ingresos | Margen | Ranking |
+(Top 10 productos)
+
+--- HOJA: Metas y Cumplimiento
+| Vendedor | Meta Mensual | Ventas Actuales | Cumplimiento % | Diferencia | Estado |
+| Vendedor 1 | 5000000 | =SUMAR.SI(...) | =C2/B2*100 | =C2-B2 | =SI(D2>=100,"Logrado","Pendiente") |`
   },
   "inventory": {
     title: "Control de Inventario",
     systemPrompt: "Genera una tabla de inventario completa con productos, stock, precios, valoración y fórmulas de gestión de inventario.",
     columns: ["Código", "Producto", "Stock Actual", "Stock Mínimo", "Precio Compra", "Precio Venta", "Valor Total", "Estado"],
-    formulas: ["inventario", "ventas"]
+    formulas: ["inventario", "ventas"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - INVENTARIO:
+--- HOJA: Inventario
+| Código | Producto | Categoría | Ubicación | Stock Actual | Stock Mínimo | Stock Máximo | Precio Compra | Precio Venta | Valor Stock | Margen % | Estado |
+(Mínimo 25 productos)
+| L2:L26 = =SI(E2<F2,"⚠️ REABASTECER",SI(E2>G2,"⚡ EXCESO","✅ OK")) |
+| TOTALES | | | | =SUMA(E:E) | | | | | =SUMA(J:J) | =PROMEDIO(K:K) | |
+
+--- HOJA: Productos Críticos
+| Código | Producto | Stock | Mínimo | Unidades Faltantes | Costo Reposición |
+(Filtrar donde Stock < Stock Mínimo)
+
+--- HOJA: Valoración
+| Categoría | Cantidad Productos | Unidades Totales | Valor Total | % del Inventario |
+(Resumen por categoría)
+| TOTAL INVENTARIO | =CONTARA(...) | =SUMA(...) | =SUMA(...) | 100% |
+
+--- HOJA: Movimientos
+| Fecha | Código | Producto | Tipo | Cantidad | Stock Anterior | Stock Nuevo | Responsable |
+(Registro de entradas y salidas)`
   },
   "budget": {
     title: "Presupuesto",
     systemPrompt: "Genera una tabla de presupuesto detallada con categorías, montos, variaciones y fórmulas de control presupuestario.",
     columns: ["Categoría", "Subcategoría", "Presupuestado", "Ejecutado", "Variación", "% Ejecución", "Estado"],
-    formulas: ["presupuesto", "finanzas"]
+    formulas: ["presupuesto", "finanzas"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - PRESUPUESTO:
+--- HOJA: Presupuesto Detallado
+| Área | Categoría | Subcategoría | Presupuesto Anual | Ene | Feb | Mar | Abr | May | Jun | Jul | Ago | Sep | Oct | Nov | Dic | Total Ejecutado | Variación | % Ejecución |
+(Categorías principales con subcategorías)
+| TOTAL | | | =SUMA(D:D) | =SUMA(E:E) | ... | =SUMA(P:P) | =Q-D | =Q/D*100 |
+
+--- HOJA: Resumen Mensual
+| Mes | Presupuestado | Ejecutado | Variación | % Ejecución | Estado | Acumulado |
+| Enero | valor | valor | =C2-B2 | =C2/B2*100 | =SI(E2>110%,"Excedido",SI(E2<90%,"Bajo","Normal")) | =C2 |
+(12 meses + Total)
+
+--- HOJA: Por Área
+| Área | Presupuesto | Ejecutado | Disponible | % Usado | Estado |
+(Cada área/departamento)
+
+--- HOJA: Indicadores
+| KPI | Valor | Meta | Cumplimiento |
+| % Ejecución Total | =formula | 100% | |
+| Mayor Desviación | | | |
+| Áreas en Rojo | =CONTAR.SI(...) | 0 | |`
   },
   "report": {
     title: "Informe",
     systemPrompt: "Genera una tabla estructurada para informes con métricas, comparativos y fórmulas de análisis.",
     columns: ["Período", "Métrica", "Valor Actual", "Valor Anterior", "Variación", "% Cambio"],
-    formulas: ["finanzas", "kpi"]
+    formulas: ["finanzas", "kpi"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - INFORME:
+--- HOJA: Resumen Ejecutivo
+| Indicador | Período Actual | Período Anterior | Variación | % Cambio | Tendencia |
+(KPIs principales del negocio)
+| =SI(E>0,"↑ Mejora","↓ Atención") en columna Tendencia |
+
+--- HOJA: Datos Detallados
+| Fecha | Categoría | Subcategoría | Valor | Observaciones |
+(Datos de respaldo)
+
+--- HOJA: Comparativo
+| Métrica | Q1 | Q2 | Q3 | Q4 | Total Año | vs Año Anterior |
+(Comparativo trimestral)
+
+--- HOJA: Gráficos Datos
+| Categoría | Valor | Porcentaje |
+(Datos listos para gráficos de Excel)`
   },
   "project": {
     title: "Gestión de Proyecto",
     systemPrompt: "Genera una tabla de seguimiento de proyecto con tareas, responsables, fechas, costos y fórmulas de gestión.",
     columns: ["Tarea", "Responsable", "Fecha Inicio", "Fecha Fin", "Días", "Costo Estimado", "Costo Real", "Variación", "Estado"],
-    formulas: ["presupuesto", "kpi"]
+    formulas: ["presupuesto", "kpi"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - PROYECTO:
+--- HOJA: Cronograma
+| ID | Fase | Tarea | Responsable | Fecha Inicio | Fecha Fin | Duración | Dependencia | % Avance | Estado |
+(Mínimo 20 tareas organizadas por fases)
+| Estado = =SI(I2>=100,"✅ Completado",SI(F2<HOY(),"⚠️ Retrasado","🔄 En Progreso")) |
+
+--- HOJA: Presupuesto Proyecto
+| Fase | Concepto | Presupuesto | Ejecutado | Comprometido | Disponible | % Usado |
+(Desglose por fase y concepto)
+| TOTAL | | =SUMA(C:C) | =SUMA(D:D) | =SUMA(E:E) | =C-D-E | =D/C*100 |
+
+--- HOJA: Equipo
+| Nombre | Rol | Horas Asignadas | Horas Trabajadas | Costo/Hora | Costo Total |
+(Equipo del proyecto)
+
+--- HOJA: Indicadores
+| KPI | Valor | Meta | Estado |
+| % Avance General | =PROMEDIO(Cronograma!I:I) | 100% | |
+| Tareas Completadas | =CONTAR.SI(...) | Total | |
+| Desviación Presupuesto | =formula | <10% | |
+| Días Restantes | =MAX(Fechas)-HOY() | | |`
   },
   "payroll": {
     title: "Nómina",
     systemPrompt: "Genera una tabla de nómina completa con empleados, salarios, deducciones, aportes y todas las fórmulas de nómina colombiana.",
     columns: ["Empleado", "Cargo", "Salario Base", "Aux. Transporte", "Horas Extra", "Bonificaciones", "Salud", "Pensión", "Otras Deducciones", "Neto a Pagar"],
-    formulas: ["nomina"]
+    formulas: ["nomina"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - NÓMINA:
+--- HOJA: Nómina Mensual
+| No. | Cédula | Empleado | Cargo | Área | Salario Base | Aux. Transporte | Días Trabajados | Horas Extra Diurnas | Horas Extra Nocturnas | Bonificaciones | Total Devengado | Salud 4% | Pensión 4% | Otros Descuentos | Total Deducciones | Neto a Pagar |
+(Mínimo 10 empleados)
+| Aux. Transporte solo si salario <= 2 SMMLV |
+| Total Devengado = Salario + Aux + HE + Bonificaciones |
+| Neto = Devengado - Deducciones |
+| TOTALES en última fila |
+
+--- HOJA: Aportes Empleador
+| Empleado | Salud 8.5% | Pensión 12% | ARL | Caja 4% | ICBF 3% | SENA 2% | Total Aportes |
+(Por cada empleado)
+
+--- HOJA: Provisiones
+| Empleado | Prima | Cesantías | Int. Cesantías | Vacaciones | Total Provisiones |
+| Prima = Salario * Días / 360 |
+| Cesantías = (Salario + Aux) * Días / 360 |
+| Int. Cesantías = Cesantías * 12% |
+| Vacaciones = Salario * Días / 720 |
+
+--- HOJA: Resumen
+| Concepto | Valor |
+| Total Salarios | =SUMA(...) |
+| Total Deducciones | =SUMA(...) |
+| Total Neto Pagado | =SUMA(...) |
+| Costo Empresa (Aportes) | =SUMA(...) |
+| COSTO TOTAL NÓMINA | =B2+B4 |`
   },
   "invoice-tracker": {
     title: "Seguimiento de Facturas",
     systemPrompt: "Genera una tabla de facturas completa con clientes, montos, vencimientos, estados y fórmulas de facturación.",
     columns: ["No. Factura", "Cliente", "Fecha Emisión", "Fecha Vencimiento", "Subtotal", "IVA", "Retenciones", "Total", "Días Vencidos", "Estado"],
-    formulas: ["facturas", "contabilidad"]
+    formulas: ["facturas", "contabilidad"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - FACTURAS:
+--- HOJA: Registro Facturas
+| No. Factura | Cliente | NIT/CC | Concepto | Fecha Emisión | Fecha Vencimiento | Subtotal | IVA 19% | Retención Fuente | Retención ICA | Total a Pagar | Fecha Pago | Estado Pago | Días Vencidos |
+(Mínimo 15 facturas)
+| IVA = Subtotal * 0.19 |
+| Total = Subtotal + IVA - Retenciones |
+| Días Vencidos = =SI(M2="Pagada",0,HOY()-F2) |
+| Estado = =SI(M2="Pagada","✅",SI(N2>30,"🔴 Crítico",SI(N2>0,"🟡 Vencida","🟢 Vigente"))) |
+
+--- HOJA: Cartera por Edad
+| Rango | Cantidad | Monto | % del Total |
+| Vigentes | =CONTAR.SI(...) | =SUMAR.SI(...) | |
+| 1-30 días | | | |
+| 31-60 días | | | |
+| 61-90 días | | | |
+| Más de 90 días | | | |
+| TOTAL CARTERA | | | 100% |
+
+--- HOJA: Por Cliente
+| Cliente | Facturas | Monto Total | Pagado | Pendiente | Días Promedio |
+(Resumen por cliente)
+
+--- HOJA: Resumen Mensual
+| Mes | Facturado | Recaudado | Pendiente | % Recaudo |
+(12 meses)`
   },
   "kpi": {
     title: "Indicadores KPI",
     systemPrompt: "Genera una tabla de KPIs profesional con indicadores, metas, valores actuales, cumplimiento y fórmulas de seguimiento.",
     columns: ["KPI", "Área", "Meta", "Valor Actual", "% Cumplimiento", "Tendencia", "Estado"],
-    formulas: ["kpi", "finanzas"]
+    formulas: ["kpi", "finanzas"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - KPIs:
+--- HOJA: Dashboard KPIs
+| Área | KPI | Descripción | Unidad | Meta | Valor Actual | % Cumplimiento | Tendencia | Peso | Score Ponderado | Estado |
+(Mínimo 15 KPIs de diferentes áreas)
+| % Cumplimiento = Actual / Meta * 100 |
+| Score Ponderado = Cumplimiento * Peso |
+| Estado = =SI(G2>=100,"🟢",SI(G2>=80,"🟡","🔴")) |
+| SCORE GLOBAL | | | | | | =PROMEDIO.SI.CONJUNTO(...) | | | =SUMA(J:J)/SUMA(I:I) | |
+
+--- HOJA: Histórico
+| KPI | Ene | Feb | Mar | Abr | May | Jun | Jul | Ago | Sep | Oct | Nov | Dic | Promedio | Tendencia |
+(Evolución mensual de cada KPI)
+
+--- HOJA: Por Área
+| Área | KPIs | Score Promedio | KPIs en Verde | KPIs en Rojo | Estado General |
+(Resumen por área/departamento)
+
+--- HOJA: Metas vs Real
+| KPI | Meta Anual | Acumulado Real | Gap | Proyección Año | Cumplirá Meta |
+(Proyección de cumplimiento)`
   },
   "macros": {
     title: "Plantilla con Macros",
     systemPrompt: "Genera una tabla con datos de ejemplo, fórmulas avanzadas y código VBA para automatización.",
     columns: ["Dato 1", "Dato 2", "Dato 3", "Fórmula", "Resultado"],
-    formulas: ["contabilidad", "finanzas", "ventas"]
+    formulas: ["contabilidad", "finanzas", "ventas"],
+    structure: `
+ESTRUCTURA DE PLANTILLA - MACROS Y AUTOMATIZACIÓN:
+--- HOJA: Datos
+| ID | Categoría | Valor 1 | Valor 2 | Resultado | Validación |
+(Datos para procesar con macros)
+| Validación = =SI(E2>0,"OK","Error") |
+
+--- HOJA: Panel Control
+| Acción | Descripción | Atajo |
+| Actualizar Datos | Recalcula todas las fórmulas | Ctrl+Shift+U |
+| Generar Informe | Crea resumen automático | Ctrl+Shift+R |
+| Limpiar Datos | Borra datos temporales | Ctrl+Shift+L |
+
+--- HOJA: Instrucciones
+| Paso | Instrucción |
+| 1 | Habilitar macros al abrir |
+| 2 | Ingresar datos en hoja "Datos" |
+| 3 | Usar botones del Panel de Control |
+
+--- HOJA: Código VBA
+(Incluir ejemplos de código VBA como texto)
+Sub ActualizarDatos()
+    ActiveWorkbook.RefreshAll
+End Sub`
   },
   "custom": {
     title: "Personalizado",
-    systemPrompt: "Genera una tabla personalizada según la descripción, incluyendo las fórmulas más relevantes para el caso.",
+    systemPrompt: "Genera una tabla personalizada según la descripción del usuario, con estructura profesional y fórmulas relevantes.",
     columns: [],
-    formulas: ["contabilidad", "finanzas", "ventas", "inventario", "nomina", "presupuesto", "kpi", "facturas"]
+    formulas: ["contabilidad", "finanzas", "ventas", "inventario", "nomina", "presupuesto", "kpi", "facturas"],
+    structure: `
+INSTRUCCIONES PARA PLANTILLA PERSONALIZADA:
+1. Analiza la descripción del usuario
+2. Crea una estructura de múltiples hojas:
+   - Hoja principal con datos
+   - Hoja de resumen/totales
+   - Hoja de análisis o gráficos
+3. Incluye:
+   - Encabezados claros y descriptivos
+   - Mínimo 15-20 filas de datos ejemplo
+   - Fórmulas de SUMA, PROMEDIO, etc.
+   - Columnas calculadas
+   - Estados con SI() condicional
+   - Fila de totales
+4. Usa formato de tabla con | separadores
+5. Agrega emojis para estados: ✅ 🟢 🟡 🔴 ⚠️`
   }
 };
 
@@ -329,38 +585,51 @@ También crea una sección adicional separada con "--- HOJA: Resumen y Análisis
 
 REGLAS OBLIGATORIAS:
 1. Genera datos en formato tabla usando | (pipe) como separador
-2. Primera fila = encabezados
-3. Datos realistas, profesionales y útiles
-4. Para múltiples hojas usa "--- HOJA: NombreHoja"
+2. Primera fila = encabezados profesionales y claros
+3. Datos REALISTAS, PROFESIONALES y ÚTILES (no genéricos)
+4. Para múltiples hojas usa "--- HOJA: NombreHoja" en línea separada
 5. INCLUYE TODAS LAS FÓRMULAS RELEVANTES en notación Excel (=SUMA, =PROMEDIO, =SI, etc.)
-6. Agrega una fila de TOTALES con fórmulas al final de cada tabla numérica
+6. Agrega una fila de TOTALES/RESUMEN con fórmulas al final de cada tabla numérica
 7. Incluye columnas calculadas con fórmulas donde sea apropiado
-${hasImportedData ? '8. Usa los datos CSV importados como base y aplica las fórmulas' : ''}
+8. USA EMOJIS para estados: ✅ Completado, 🟢 OK, 🟡 Atención, 🔴 Crítico, ⚠️ Alerta
+9. MÍNIMO 15-20 filas de datos por hoja principal
+10. Incluye validaciones con =SI() para estados automáticos
+${hasImportedData ? '11. Usa los datos CSV importados como base y aplica las fórmulas' : ''}
 ${chartInstructions}
+
+ESTRUCTURA REQUERIDA:
+${template.structure}
 
 ${relevantFormulas}
 
-FÓRMULAS EXCEL COMUNES A USAR:
+FÓRMULAS EXCEL A USAR:
 - =SUMA(rango) para totales
-- =PROMEDIO(rango) para promedios
+- =PROMEDIO(rango) para promedios  
 - =MAX(rango), =MIN(rango) para extremos
-- =SI(condición, verdadero, falso) para condicionales
+- =SI(condición, verdadero, falso) para estados y validaciones
 - =BUSCARV(valor, rango, columna, falso) para búsquedas
-- =SUMAR.SI(rango_criterio, criterio, rango_suma) para sumas condicionales
-- =CONTAR.SI(rango, criterio) para conteos
+- =SUMAR.SI(rango_criterio, criterio, rango_suma) para sumas por categoría
+- =CONTAR.SI(rango, criterio) para conteos condicionales
 - =REDONDEAR(número, decimales) para redondeos
 - =CONCATENAR() o & para unir texto
 - =HOY() para fecha actual
 - =DIAS(fecha_fin, fecha_inicio) para diferencia de días
+- =PORCENTAJE: valor/total*100
 
 ${template.columns.length > 0 ? `Columnas sugeridas: ${template.columns.join(', ')}` : ''}
 
 FORMATO EJEMPLO:
 --- HOJA: Datos
-| Producto | Cantidad | Precio | Total | Margen |
-| Producto A | 10 | 100 | =B2*C2 | =D2*0.3 |
-| Producto B | 5 | 200 | =B3*C3 | =D3*0.3 |
-| TOTAL | =SUMA(B2:B3) | =PROMEDIO(C2:C3) | =SUMA(D2:D3) | =SUMA(E2:E3) |`;
+| Producto | Cantidad | Precio | Total | Margen | Estado |
+| Producto A | 10 | 100 | =B2*C2 | =D2*0.3 | =SI(D2>500,"🟢","🟡") |
+| Producto B | 5 | 200 | =B3*C3 | =D3*0.3 | =SI(D3>500,"🟢","🟡") |
+| TOTAL | =SUMA(B2:B3) | =PROMEDIO(C2:C3) | =SUMA(D2:D3) | =SUMA(E2:E3) | |
+
+--- HOJA: Resumen
+| Métrica | Valor |
+| Total Productos | =CONTARA('Datos'!A:A)-1 |
+| Venta Total | =SUMA('Datos'!D:D) |
+| Margen Promedio | =PROMEDIO('Datos'!E:E) |`;
 
     let userMessage = `Genera un Excel profesional para: ${description}
 
