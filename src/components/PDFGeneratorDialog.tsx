@@ -145,10 +145,6 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
   };
 
   const handleGenerate = async () => {
-    if (!templateType) {
-      toast.error("Selecciona un tipo de documento");
-      return;
-    }
     if (!description.trim()) {
       toast.error("Describe qué necesitas en el documento");
       return;
@@ -166,7 +162,7 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
       }
 
       const response = await supabase.functions.invoke('generate-pdf', {
-        body: { templateType, description, customTitle: customTitle.trim() || undefined }
+        body: { description, customTitle: customTitle.trim() || undefined }
       });
 
       if (response.error) {
@@ -406,25 +402,6 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
         ) : (
           <div className="flex flex-col gap-4 mt-4">
             <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">Tipo de documento</label>
-              <Select value={templateType} onValueChange={setTemplateType}>
-                <SelectTrigger className="bg-background/50 border-border">
-                  <SelectValue placeholder="Selecciona una plantilla..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {templateOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex flex-col">
-                        <span>{option.label}</span>
-                        <span className="text-xs text-muted-foreground">{option.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <label className="text-sm text-muted-foreground">Título personalizado (opcional)</label>
               <Input
                 placeholder="Ej: Contrato de Arrendamiento 2024"
@@ -437,15 +414,10 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
 
             <div className="space-y-2">
               <label className="text-sm text-muted-foreground">
-                Describe qué necesitas en el documento
+                Describe qué documento necesitas
               </label>
               <SpeechTextarea
-                placeholder={
-                  templateType === "contract" ? "Ej: Un contrato de arrendamiento para un apartamento en Bogotá, por 12 meses, con precio de $1,500,000 mensuales..."
-                  : templateType === "invoice" ? "Ej: Factura para empresa XYZ, por servicios de diseño web, valor $2,000,000..."
-                  : templateType === "cv" ? "Ej: CV para ingeniero de software con 5 años de experiencia en React, Python y AWS..."
-                  : "Describe los detalles específicos que necesitas incluir..."
-                }
+                placeholder="Describe el documento que necesitas. Ej: 'Un contrato de arrendamiento para un apartamento en Bogotá', 'Una factura para servicios de diseño web', 'Un CV para ingeniero de software'..."
                 value={description}
                 onChange={setDescription}
                 className="bg-background/50 border-border min-h-[120px]"
@@ -473,7 +445,7 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
 
             <Button
               onClick={handleGenerate} 
-              disabled={isGenerating || !templateType || !description.trim()}
+              disabled={isGenerating || !description.trim()}
               className="w-full"
             >
               {isGenerating ? (
@@ -490,7 +462,7 @@ export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated 
             </Button>
 
             <p className="text-xs text-muted-foreground text-center">
-              El documento se generará con contenido profesional basado en tu descripción
+              Medussa IA detectará automáticamente el tipo de documento
             </p>
           </div>
         )}

@@ -383,10 +383,6 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   };
 
   const handleGenerate = async () => {
-    if (!templateType) {
-      toast.error("Selecciona un tipo de plantilla");
-      return;
-    }
     if (!description.trim()) {
       toast.error("Describe qué necesitas en el archivo Excel");
       return;
@@ -411,7 +407,6 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
 
       const response = await supabase.functions.invoke('generate-xlsx', {
         body: { 
-          templateType, 
           description, 
           customTitle: customTitle.trim() || undefined,
           importedData: csvDataString || undefined,
@@ -424,7 +419,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
       }
 
       const { content, title } = response.data;
-      const finalTitle = customTitle || title || templateOptions.find(t => t.value === templateType)?.label || "Documento";
+      const finalTitle = customTitle || title || "Documento Excel";
       
       // Create workbook from content with random theme
       const randomTheme = getRandomTheme();
@@ -685,25 +680,6 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
           <ScrollArea className="max-h-[60vh] pr-2">
           <div className="flex flex-col gap-3 mt-2">
             <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">Tipo de plantilla</label>
-              <Select value={templateType} onValueChange={setTemplateType}>
-                <SelectTrigger className="bg-background/50 border-border">
-                  <SelectValue placeholder="Selecciona una plantilla..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {templateOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex flex-col">
-                        <span>{option.label}</span>
-                        <span className="text-xs text-muted-foreground">{option.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <label className="text-sm text-muted-foreground">Título del archivo (opcional)</label>
               <Input
                 placeholder="Ej: Ventas Q4 2024"
@@ -719,13 +695,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
                 Describe qué datos necesitas
               </label>
               <SpeechTextarea
-                placeholder={
-                  templateType === "data-analysis" ? "Ej: Análisis de ventas mensuales con promedio, desviación estándar y tendencia..."
-                  : templateType === "finance" ? "Ej: Control de gastos del hogar con categorías: alimentación, servicios, transporte..."
-                  : templateType === "sales" ? "Ej: Seguimiento de ventas por vendedor con metas y comisiones del 5%..."
-                  : templateType === "macros" ? "Ej: Macro para formatear automáticamente tablas y calcular totales..."
-                  : "Describe los datos, columnas y cálculos que necesitas..."
-                }
+                placeholder="Describe el archivo Excel que necesitas. Ej: 'Una nómina con salarios y deducciones', 'Un control de inventario con stock y valoración', 'Un presupuesto mensual con categorías'..."
                 value={description}
                 onChange={setDescription}
                 className="bg-background/50 border-border min-h-[60px]"
@@ -851,7 +821,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
 
             <Button
               onClick={handleGenerate} 
-              disabled={isGenerating || !templateType || !description.trim()}
+              disabled={isGenerating || !description.trim()}
               className="w-full"
             >
               {isGenerating ? (
@@ -868,7 +838,7 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
             </Button>
 
             <p className="text-xs text-muted-foreground text-center">
-              El archivo se generará con estructura profesional basada en tu descripción
+              Medussa IA detectará automáticamente el tipo de plantilla
             </p>
           </div>
           </ScrollArea>

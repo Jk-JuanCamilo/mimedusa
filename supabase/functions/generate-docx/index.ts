@@ -150,10 +150,10 @@ serve(async (req) => {
     
     void supabase.rpc('record_api_request', { p_ip_address: clientIp, p_endpoint: 'generate-docx' });
     
-    const { templateType, description, customTitle } = await req.json();
+    const { description, customTitle } = await req.json();
 
-    if (!templateType || !description) {
-      return new Response(JSON.stringify({ error: "Se requiere tipo de plantilla y descripción" }),
+    if (!description) {
+      return new Response(JSON.stringify({ error: "Se requiere descripción del documento" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -162,15 +162,13 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const templateConfig = getDocxConfig(templateType);
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "Error de configuración" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    console.log("generate-docx:", templateType);
+    console.log("generate-docx: Auto-detecting document type for:", description.substring(0, 100));
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -180,17 +178,17 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: `${templateConfig.prompt}
+            content: `Eres un generador de documentos Word profesional. Analiza la descripción del usuario y genera automáticamente el tipo de documento apropiado (carta, contrato, informe, certificado, CV, memorando, acta, etc.).
 
 REGLAS:
-1. Contenido profesional y estructurado
-2. Secciones: ${templateConfig.sections.join(', ')}
+1. DETECTA automáticamente qué tipo de documento necesita el usuario
+2. Genera contenido profesional, completo y bien estructurado
 3. Marca cada sección con ## antes del título
-4. Contenido realista y útil
-5. Solo el documento, sin explicaciones
-6. En español` 
+4. Contenido realista, útil y apropiado para el tipo de documento
+5. Responde SOLO con el contenido del documento, sin explicaciones
+6. Todo en español profesional` 
           },
-          { role: 'user', content: `Genera "${templateConfig.title}" basado en: ${description}` }
+          { role: 'user', content: `Genera el documento Word basado en esta descripción: ${description}` }
         ],
       }),
     });
@@ -215,8 +213,11 @@ REGLAS:
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // Extract title from first line or use custom title
+    const extractedTitle = content.split('\n')[0]?.replace(/^#+\s*/, '').trim() || "Documento";
+
     return new Response(JSON.stringify({
-      content, title: customTitle || templateConfig.title, templateType, sections: templateConfig.sections
+      content, title: customTitle || extractedTitle
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {

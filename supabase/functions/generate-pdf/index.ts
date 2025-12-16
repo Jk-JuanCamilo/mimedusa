@@ -146,10 +146,10 @@ serve(async (req) => {
     
     void supabase.rpc('record_api_request', { p_ip_address: clientIp, p_endpoint: 'generate-pdf' });
     
-    const { templateType, description, customTitle } = await req.json();
+    const { description, customTitle } = await req.json();
 
-    if (!templateType || !description) {
-      return new Response(JSON.stringify({ error: 'Se requiere tipo de plantilla y descripción' }),
+    if (!description) {
+      return new Response(JSON.stringify({ error: 'Se requiere descripción del documento' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -163,11 +163,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Servicio temporalmente no disponible." }),
         { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-
-    const systemPrompt = getSystemPrompt(templateType);
-    const docTitle = getDocumentTitle(templateType);
     
-    console.log(`Generating PDF: ${templateType}`);
+    console.log(`Generating PDF with auto-detection for: ${description.substring(0, 100)}...`);
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -175,8 +172,16 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: `${systemPrompt}\n\nREGLAS:\n1. Genera contenido profesional y completo\n2. Usa formato con secciones claras (##)\n3. Incluye todos los datos necesarios\n4. Responde SOLO con el contenido del documento, sin explicaciones\n5. En español` },
-          { role: "user", content: `Genera un ${docTitle} basado en:\n\n${description}` }
+          { role: "system", content: `Eres un generador de documentos PDF profesional. Analiza la descripción del usuario y genera automáticamente el tipo de documento apropiado (contrato, factura, carta, CV, certificado, tutela, demanda, petición, informe, acta, etc.).
+
+REGLAS:
+1. DETECTA automáticamente qué tipo de documento necesita el usuario
+2. Genera contenido profesional, completo y bien estructurado
+3. Usa formato con secciones claras (## para títulos)
+4. Incluye todos los datos necesarios según el tipo de documento
+5. Responde SOLO con el contenido del documento, sin explicaciones
+6. Todo en español profesional` },
+          { role: "user", content: `Genera el documento basado en esta descripción:\n\n${description}` }
         ],
         max_tokens: 4000,
       }),
@@ -197,10 +202,11 @@ serve(async (req) => {
     const aiData = await aiResponse.json();
     const generatedContent = aiData.choices?.[0]?.message?.content || "";
 
-    if (!generatedContent) throw new Error("No se pudo generar contenido");
+    // Extract title from content or use custom title
+    const extractedTitle = generatedContent.split('\n')[0]?.replace(/^#+\s*/, '').trim() || "Documento";
 
     return new Response(JSON.stringify({
-      success: true, content: generatedContent, templateType, title: customTitle || docTitle
+      success: true, content: generatedContent, title: customTitle || extractedTitle
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
