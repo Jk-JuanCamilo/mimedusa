@@ -161,335 +161,101 @@ FÓRMULAS DE FACTURACIÓN (incluir según aplique):
 - Aging (Antigüedad) = Clasificación por días vencidos`
 };
 
-const templates: Record<string, { title: string; systemPrompt: string; columns: string[]; formulas: string[]; structure: string }> = {
-  "data-analysis": {
-    title: "Análisis de Datos",
-    systemPrompt: "Genera una tabla de datos para análisis con columnas relevantes, incluyendo fórmulas estadísticas y de análisis.",
-    columns: ["ID", "Categoría", "Valor", "Fecha", "Observación"],
-    formulas: ["contabilidad", "finanzas"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - ANÁLISIS DE DATOS:
---- HOJA: Datos Principales
-| ID | Categoría | Subcategoría | Valor | Cantidad | Fecha | Observación |
-(Mínimo 15 filas de datos realistas)
-| RESUMEN | | | =SUMA(D2:D16) | =SUMA(E2:E16) | | |
-
---- HOJA: Análisis Estadístico
-| Métrica | Valor | Fórmula |
-| Total | =SUMA('Datos Principales'!D:D) | SUMA |
-| Promedio | =PROMEDIO('Datos Principales'!D:D) | PROMEDIO |
-| Máximo | =MAX('Datos Principales'!D:D) | MAX |
-| Mínimo | =MIN('Datos Principales'!D:D) | MIN |
-| Conteo | =CONTARA('Datos Principales'!A:A)-1 | CONTARA |
-| Desviación | =DESVEST('Datos Principales'!D:D) | DESVEST |
-
---- HOJA: Resumen por Categoría
-| Categoría | Total | Porcentaje |
-(Agregar =SUMAR.SI para cada categoría)`
-  },
-  "finance": {
-    title: "Control Financiero",
-    systemPrompt: "Genera una tabla de control financiero completa con ingresos, gastos, balance, categorías y todas las fórmulas financieras necesarias.",
-    columns: ["Fecha", "Descripción", "Categoría", "Ingreso", "Gasto", "Balance"],
-    formulas: ["contabilidad", "finanzas", "presupuesto"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - CONTROL FINANCIERO:
---- HOJA: Movimientos
-| Fecha | Descripción | Categoría | Tipo | Ingreso | Gasto | Balance |
-(Mínimo 20 filas con movimientos realistas)
-| TOTALES | | | | =SUMA(E2:E21) | =SUMA(F2:F21) | =E22-F22 |
-
---- HOJA: Resumen Mensual
-| Mes | Ingresos | Gastos | Balance | Ahorro % |
-| Enero | =SUMAR.SI(...) | =SUMAR.SI(...) | =B2-C2 | =D2/B2*100 |
-(12 meses)
-| TOTAL ANUAL | =SUMA(B2:B13) | =SUMA(C2:C13) | =SUMA(D2:D13) | =D14/B14*100 |
-
---- HOJA: Categorías
-| Categoría | Presupuesto | Gastado | Disponible | % Usado |
-(Categorías: Alimentación, Transporte, Servicios, Entretenimiento, Salud, Educación, Otros)
-| TOTAL | =SUMA(B:B) | =SUMA(C:C) | =SUMA(D:D) | =C9/B9*100 |
-
---- HOJA: Indicadores
-| Indicador | Valor | Estado |
-| Tasa de Ahorro | =formula | =SI(B2>20%,"Excelente",SI(B2>10%,"Bueno","Mejorar")) |
-| Ratio Gastos/Ingresos | =formula | |
-| Balance Promedio | =formula | |`
-  },
-  "sales": {
-    title: "Seguimiento de Ventas",
-    systemPrompt: "Genera una tabla de ventas profesional con productos, cantidades, precios, totales, comisiones y todas las fórmulas de ventas.",
-    columns: ["Fecha", "Vendedor", "Producto", "Cantidad", "Precio Unitario", "Descuento", "IVA", "Total", "Comisión"],
-    formulas: ["ventas", "facturas"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - VENTAS:
---- HOJA: Registro de Ventas
-| No. | Fecha | Cliente | Vendedor | Producto | Cantidad | Precio Unit. | Subtotal | Descuento % | Descuento $ | IVA 19% | Total | Comisión 5% |
-(Mínimo 20 ventas con datos realistas)
-| TOTALES | | | | | =SUMA(F:F) | =PROMEDIO(G:G) | =SUMA(H:H) | | =SUMA(J:J) | =SUMA(K:K) | =SUMA(L:L) | =SUMA(M:M) |
-
---- HOJA: Ranking Vendedores
-| Vendedor | Ventas Totales | Unidades | Comisión Total | Ticket Promedio | Ranking |
-(Usar SUMAR.SI para cada vendedor)
-
---- HOJA: Productos Más Vendidos
-| Producto | Unidades Vendidas | Ingresos | Margen | Ranking |
-(Top 10 productos)
-
---- HOJA: Metas y Cumplimiento
-| Vendedor | Meta Mensual | Ventas Actuales | Cumplimiento % | Diferencia | Estado |
-| Vendedor 1 | 5000000 | =SUMAR.SI(...) | =C2/B2*100 | =C2-B2 | =SI(D2>=100,"Logrado","Pendiente") |`
-  },
-  "inventory": {
-    title: "Control de Inventario",
-    systemPrompt: "Genera una tabla de inventario completa con productos, stock, precios, valoración y fórmulas de gestión de inventario.",
-    columns: ["Código", "Producto", "Stock Actual", "Stock Mínimo", "Precio Compra", "Precio Venta", "Valor Total", "Estado"],
-    formulas: ["inventario", "ventas"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - INVENTARIO:
---- HOJA: Inventario
-| Código | Producto | Categoría | Ubicación | Stock Actual | Stock Mínimo | Stock Máximo | Precio Compra | Precio Venta | Valor Stock | Margen % | Estado |
-(Mínimo 25 productos)
-| L2:L26 = =SI(E2<F2,"⚠️ REABASTECER",SI(E2>G2,"⚡ EXCESO","✅ OK")) |
-| TOTALES | | | | =SUMA(E:E) | | | | | =SUMA(J:J) | =PROMEDIO(K:K) | |
-
---- HOJA: Productos Críticos
-| Código | Producto | Stock | Mínimo | Unidades Faltantes | Costo Reposición |
-(Filtrar donde Stock < Stock Mínimo)
-
---- HOJA: Valoración
-| Categoría | Cantidad Productos | Unidades Totales | Valor Total | % del Inventario |
-(Resumen por categoría)
-| TOTAL INVENTARIO | =CONTARA(...) | =SUMA(...) | =SUMA(...) | 100% |
-
---- HOJA: Movimientos
-| Fecha | Código | Producto | Tipo | Cantidad | Stock Anterior | Stock Nuevo | Responsable |
-(Registro de entradas y salidas)`
-  },
-  "budget": {
-    title: "Presupuesto",
-    systemPrompt: "Genera una tabla de presupuesto detallada con categorías, montos, variaciones y fórmulas de control presupuestario.",
-    columns: ["Categoría", "Subcategoría", "Presupuestado", "Ejecutado", "Variación", "% Ejecución", "Estado"],
-    formulas: ["presupuesto", "finanzas"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - PRESUPUESTO:
---- HOJA: Presupuesto Detallado
-| Área | Categoría | Subcategoría | Presupuesto Anual | Ene | Feb | Mar | Abr | May | Jun | Jul | Ago | Sep | Oct | Nov | Dic | Total Ejecutado | Variación | % Ejecución |
-(Categorías principales con subcategorías)
-| TOTAL | | | =SUMA(D:D) | =SUMA(E:E) | ... | =SUMA(P:P) | =Q-D | =Q/D*100 |
-
---- HOJA: Resumen Mensual
-| Mes | Presupuestado | Ejecutado | Variación | % Ejecución | Estado | Acumulado |
-| Enero | valor | valor | =C2-B2 | =C2/B2*100 | =SI(E2>110%,"Excedido",SI(E2<90%,"Bajo","Normal")) | =C2 |
-(12 meses + Total)
-
---- HOJA: Por Área
-| Área | Presupuesto | Ejecutado | Disponible | % Usado | Estado |
-(Cada área/departamento)
-
---- HOJA: Indicadores
-| KPI | Valor | Meta | Cumplimiento |
-| % Ejecución Total | =formula | 100% | |
-| Mayor Desviación | | | |
-| Áreas en Rojo | =CONTAR.SI(...) | 0 | |`
-  },
-  "report": {
-    title: "Informe",
-    systemPrompt: "Genera una tabla estructurada para informes con métricas, comparativos y fórmulas de análisis.",
-    columns: ["Período", "Métrica", "Valor Actual", "Valor Anterior", "Variación", "% Cambio"],
-    formulas: ["finanzas", "kpi"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - INFORME:
---- HOJA: Resumen Ejecutivo
-| Indicador | Período Actual | Período Anterior | Variación | % Cambio | Tendencia |
-(KPIs principales del negocio)
-| =SI(E>0,"↑ Mejora","↓ Atención") en columna Tendencia |
-
---- HOJA: Datos Detallados
-| Fecha | Categoría | Subcategoría | Valor | Observaciones |
-(Datos de respaldo)
-
---- HOJA: Comparativo
-| Métrica | Q1 | Q2 | Q3 | Q4 | Total Año | vs Año Anterior |
-(Comparativo trimestral)
-
---- HOJA: Gráficos Datos
-| Categoría | Valor | Porcentaje |
-(Datos listos para gráficos de Excel)`
-  },
-  "project": {
-    title: "Gestión de Proyecto",
-    systemPrompt: "Genera una tabla de seguimiento de proyecto con tareas, responsables, fechas, costos y fórmulas de gestión.",
-    columns: ["Tarea", "Responsable", "Fecha Inicio", "Fecha Fin", "Días", "Costo Estimado", "Costo Real", "Variación", "Estado"],
-    formulas: ["presupuesto", "kpi"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - PROYECTO:
---- HOJA: Cronograma
-| ID | Fase | Tarea | Responsable | Fecha Inicio | Fecha Fin | Duración | Dependencia | % Avance | Estado |
-(Mínimo 20 tareas organizadas por fases)
-| Estado = =SI(I2>=100,"✅ Completado",SI(F2<HOY(),"⚠️ Retrasado","🔄 En Progreso")) |
-
---- HOJA: Presupuesto Proyecto
-| Fase | Concepto | Presupuesto | Ejecutado | Comprometido | Disponible | % Usado |
-(Desglose por fase y concepto)
-| TOTAL | | =SUMA(C:C) | =SUMA(D:D) | =SUMA(E:E) | =C-D-E | =D/C*100 |
-
---- HOJA: Equipo
-| Nombre | Rol | Horas Asignadas | Horas Trabajadas | Costo/Hora | Costo Total |
-(Equipo del proyecto)
-
---- HOJA: Indicadores
-| KPI | Valor | Meta | Estado |
-| % Avance General | =PROMEDIO(Cronograma!I:I) | 100% | |
-| Tareas Completadas | =CONTAR.SI(...) | Total | |
-| Desviación Presupuesto | =formula | <10% | |
-| Días Restantes | =MAX(Fechas)-HOY() | | |`
-  },
-  "payroll": {
-    title: "Nómina",
-    systemPrompt: "Genera una tabla de nómina completa con empleados, salarios, deducciones, aportes y todas las fórmulas de nómina colombiana.",
-    columns: ["Empleado", "Cargo", "Salario Base", "Aux. Transporte", "Horas Extra", "Bonificaciones", "Salud", "Pensión", "Otras Deducciones", "Neto a Pagar"],
-    formulas: ["nomina"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - NÓMINA:
---- HOJA: Nómina Mensual
-| No. | Cédula | Empleado | Cargo | Área | Salario Base | Aux. Transporte | Días Trabajados | Horas Extra Diurnas | Horas Extra Nocturnas | Bonificaciones | Total Devengado | Salud 4% | Pensión 4% | Otros Descuentos | Total Deducciones | Neto a Pagar |
-(Mínimo 10 empleados)
-| Aux. Transporte solo si salario <= 2 SMMLV |
-| Total Devengado = Salario + Aux + HE + Bonificaciones |
-| Neto = Devengado - Deducciones |
-| TOTALES en última fila |
-
---- HOJA: Aportes Empleador
-| Empleado | Salud 8.5% | Pensión 12% | ARL | Caja 4% | ICBF 3% | SENA 2% | Total Aportes |
-(Por cada empleado)
-
---- HOJA: Provisiones
-| Empleado | Prima | Cesantías | Int. Cesantías | Vacaciones | Total Provisiones |
-| Prima = Salario * Días / 360 |
-| Cesantías = (Salario + Aux) * Días / 360 |
-| Int. Cesantías = Cesantías * 12% |
-| Vacaciones = Salario * Días / 720 |
-
---- HOJA: Resumen
-| Concepto | Valor |
-| Total Salarios | =SUMA(...) |
-| Total Deducciones | =SUMA(...) |
-| Total Neto Pagado | =SUMA(...) |
-| Costo Empresa (Aportes) | =SUMA(...) |
-| COSTO TOTAL NÓMINA | =B2+B4 |`
-  },
-  "invoice-tracker": {
-    title: "Seguimiento de Facturas",
-    systemPrompt: "Genera una tabla de facturas completa con clientes, montos, vencimientos, estados y fórmulas de facturación.",
-    columns: ["No. Factura", "Cliente", "Fecha Emisión", "Fecha Vencimiento", "Subtotal", "IVA", "Retenciones", "Total", "Días Vencidos", "Estado"],
-    formulas: ["facturas", "contabilidad"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - FACTURAS:
---- HOJA: Registro Facturas
-| No. Factura | Cliente | NIT/CC | Concepto | Fecha Emisión | Fecha Vencimiento | Subtotal | IVA 19% | Retención Fuente | Retención ICA | Total a Pagar | Fecha Pago | Estado Pago | Días Vencidos |
-(Mínimo 15 facturas)
-| IVA = Subtotal * 0.19 |
-| Total = Subtotal + IVA - Retenciones |
-| Días Vencidos = =SI(M2="Pagada",0,HOY()-F2) |
-| Estado = =SI(M2="Pagada","✅",SI(N2>30,"🔴 Crítico",SI(N2>0,"🟡 Vencida","🟢 Vigente"))) |
-
---- HOJA: Cartera por Edad
-| Rango | Cantidad | Monto | % del Total |
-| Vigentes | =CONTAR.SI(...) | =SUMAR.SI(...) | |
-| 1-30 días | | | |
-| 31-60 días | | | |
-| 61-90 días | | | |
-| Más de 90 días | | | |
-| TOTAL CARTERA | | | 100% |
-
---- HOJA: Por Cliente
-| Cliente | Facturas | Monto Total | Pagado | Pendiente | Días Promedio |
-(Resumen por cliente)
-
---- HOJA: Resumen Mensual
-| Mes | Facturado | Recaudado | Pendiente | % Recaudo |
-(12 meses)`
-  },
-  "kpi": {
-    title: "Indicadores KPI",
-    systemPrompt: "Genera una tabla de KPIs profesional con indicadores, metas, valores actuales, cumplimiento y fórmulas de seguimiento.",
-    columns: ["KPI", "Área", "Meta", "Valor Actual", "% Cumplimiento", "Tendencia", "Estado"],
-    formulas: ["kpi", "finanzas"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - KPIs:
---- HOJA: Dashboard KPIs
-| Área | KPI | Descripción | Unidad | Meta | Valor Actual | % Cumplimiento | Tendencia | Peso | Score Ponderado | Estado |
-(Mínimo 15 KPIs de diferentes áreas)
-| % Cumplimiento = Actual / Meta * 100 |
-| Score Ponderado = Cumplimiento * Peso |
-| Estado = =SI(G2>=100,"🟢",SI(G2>=80,"🟡","🔴")) |
-| SCORE GLOBAL | | | | | | =PROMEDIO.SI.CONJUNTO(...) | | | =SUMA(J:J)/SUMA(I:I) | |
-
---- HOJA: Histórico
-| KPI | Ene | Feb | Mar | Abr | May | Jun | Jul | Ago | Sep | Oct | Nov | Dic | Promedio | Tendencia |
-(Evolución mensual de cada KPI)
-
---- HOJA: Por Área
-| Área | KPIs | Score Promedio | KPIs en Verde | KPIs en Rojo | Estado General |
-(Resumen por área/departamento)
-
---- HOJA: Metas vs Real
-| KPI | Meta Anual | Acumulado Real | Gap | Proyección Año | Cumplirá Meta |
-(Proyección de cumplimiento)`
-  },
-  "macros": {
-    title: "Plantilla con Macros",
-    systemPrompt: "Genera una tabla con datos de ejemplo, fórmulas avanzadas y código VBA para automatización.",
-    columns: ["Dato 1", "Dato 2", "Dato 3", "Fórmula", "Resultado"],
-    formulas: ["contabilidad", "finanzas", "ventas"],
-    structure: `
-ESTRUCTURA DE PLANTILLA - MACROS Y AUTOMATIZACIÓN:
---- HOJA: Datos
-| ID | Categoría | Valor 1 | Valor 2 | Resultado | Validación |
-(Datos para procesar con macros)
-| Validación = =SI(E2>0,"OK","Error") |
-
---- HOJA: Panel Control
-| Acción | Descripción | Atajo |
-| Actualizar Datos | Recalcula todas las fórmulas | Ctrl+Shift+U |
-| Generar Informe | Crea resumen automático | Ctrl+Shift+R |
-| Limpiar Datos | Borra datos temporales | Ctrl+Shift+L |
-
---- HOJA: Instrucciones
-| Paso | Instrucción |
-| 1 | Habilitar macros al abrir |
-| 2 | Ingresar datos en hoja "Datos" |
-| 3 | Usar botones del Panel de Control |
-
---- HOJA: Código VBA
-(Incluir ejemplos de código VBA como texto)
-Sub ActualizarDatos()
-    ActiveWorkbook.RefreshAll
-End Sub`
-  },
-  "custom": {
-    title: "Personalizado",
-    systemPrompt: "Genera una tabla personalizada según la descripción del usuario, con estructura profesional y fórmulas relevantes.",
-    columns: [],
-    formulas: ["contabilidad", "finanzas", "ventas", "inventario", "nomina", "presupuesto", "kpi", "facturas"],
-    structure: `
-INSTRUCCIONES PARA PLANTILLA PERSONALIZADA:
-1. Analiza la descripción del usuario
-2. Crea una estructura de múltiples hojas:
-   - Hoja principal con datos
-   - Hoja de resumen/totales
-   - Hoja de análisis o gráficos
-3. Incluye:
-   - Encabezados claros y descriptivos
-   - Mínimo 15-20 filas de datos ejemplo
-   - Fórmulas de SUMA, PROMEDIO, etc.
-   - Columnas calculadas
-   - Estados con SI() condicional
-   - Fila de totales
-4. Usa formato de tabla con | separadores
-5. Agrega emojis para estados: ✅ 🟢 🟡 🔴 ⚠️`
-  }
+// Template configurations with flexible system
+const getXlsxSystemPrompt = (templateType: string): { title: string; prompt: string; formulas: string[] } => {
+  const configs: Record<string, { title: string; prompt: string; formulas: string[] }> = {
+    // Análisis y Datos
+    "data-analysis": { title: "Análisis de Datos", prompt: "Genera tabla de análisis estadístico con datos, fórmulas y resumen.", formulas: ["contabilidad", "finanzas"] },
+    "dashboard": { title: "Dashboard", prompt: "Genera panel de control con métricas clave, KPIs y visualizaciones.", formulas: ["kpi", "finanzas"] },
+    "pivot-data": { title: "Datos para Pivot", prompt: "Genera datos estructurados para tablas dinámicas.", formulas: ["contabilidad"] },
+    "survey-results": { title: "Resultados de Encuesta", prompt: "Genera análisis de encuestas con respuestas y estadísticas.", formulas: ["kpi"] },
+    "statistical-report": { title: "Informe Estadístico", prompt: "Genera reporte estadístico con datos y análisis.", formulas: ["contabilidad", "finanzas"] },
+    
+    // Finanzas y Contabilidad
+    "finance": { title: "Control Financiero", prompt: "Genera control financiero con ingresos, gastos y balance.", formulas: ["contabilidad", "finanzas", "presupuesto"] },
+    "budget": { title: "Presupuesto", prompt: "Genera presupuesto detallado con categorías y variaciones.", formulas: ["presupuesto", "finanzas"] },
+    "cash-flow": { title: "Flujo de Caja", prompt: "Genera proyección de flujo de caja con entradas y salidas.", formulas: ["finanzas", "contabilidad"] },
+    "balance-sheet": { title: "Balance General", prompt: "Genera balance general con activos, pasivos y patrimonio.", formulas: ["contabilidad"] },
+    "income-statement": { title: "Estado de Resultados", prompt: "Genera estado de pérdidas y ganancias.", formulas: ["contabilidad", "finanzas"] },
+    "expense-report": { title: "Reporte de Gastos", prompt: "Genera control detallado de gastos por categoría.", formulas: ["presupuesto", "contabilidad"] },
+    "accounts-receivable": { title: "Cuentas por Cobrar", prompt: "Genera seguimiento de cartera y deudores.", formulas: ["facturas", "contabilidad"] },
+    "accounts-payable": { title: "Cuentas por Pagar", prompt: "Genera control de obligaciones y pagos.", formulas: ["facturas", "contabilidad"] },
+    "loan-amortization": { title: "Amortización de Préstamo", prompt: "Genera tabla de amortización con cuotas e intereses.", formulas: ["finanzas"] },
+    "tax-calculator": { title: "Calculadora de Impuestos", prompt: "Genera calculadora de impuestos y retenciones.", formulas: ["contabilidad", "facturas"] },
+    
+    // Ventas y Marketing
+    "sales": { title: "Seguimiento de Ventas", prompt: "Genera seguimiento de ventas con productos, clientes y comisiones.", formulas: ["ventas", "facturas"] },
+    "sales-forecast": { title: "Pronóstico de Ventas", prompt: "Genera proyección de ventas futuras.", formulas: ["ventas", "kpi"] },
+    "client-database": { title: "Base de Clientes", prompt: "Genera CRM con datos de clientes y seguimiento.", formulas: ["ventas"] },
+    "leads-tracker": { title: "Seguimiento de Leads", prompt: "Genera control de prospectos y oportunidades.", formulas: ["ventas", "kpi"] },
+    "commission-calculator": { title: "Cálculo de Comisiones", prompt: "Genera cálculo de comisiones por vendedor.", formulas: ["ventas", "nomina"] },
+    "marketing-campaign": { title: "Campaña de Marketing", prompt: "Genera seguimiento de campañas publicitarias.", formulas: ["kpi", "presupuesto"] },
+    "competitor-analysis": { title: "Análisis de Competencia", prompt: "Genera comparativa con competidores.", formulas: ["kpi"] },
+    "price-list": { title: "Lista de Precios", prompt: "Genera catálogo de productos con precios.", formulas: ["ventas"] },
+    
+    // Inventario y Logística
+    "inventory": { title: "Control de Inventario", prompt: "Genera inventario con stock, precios y valoración.", formulas: ["inventario", "ventas"] },
+    "warehouse-management": { title: "Gestión de Almacén", prompt: "Genera control de entradas y salidas de almacén.", formulas: ["inventario"] },
+    "stock-valuation": { title: "Valoración de Stock", prompt: "Genera valoración de inventario.", formulas: ["inventario", "contabilidad"] },
+    "purchase-orders": { title: "Órdenes de Compra", prompt: "Genera seguimiento de pedidos a proveedores.", formulas: ["inventario", "facturas"] },
+    "supplier-database": { title: "Base de Proveedores", prompt: "Genera directorio de proveedores.", formulas: ["inventario"] },
+    "shipping-tracker": { title: "Seguimiento de Envíos", prompt: "Genera control de entregas y logística.", formulas: ["inventario", "kpi"] },
+    
+    // Recursos Humanos
+    "payroll": { title: "Nómina", prompt: "Genera nómina con salarios, deducciones y aportes.", formulas: ["nomina"] },
+    "employee-database": { title: "Base de Empleados", prompt: "Genera directorio de personal.", formulas: ["nomina"] },
+    "attendance-tracker": { title: "Control de Asistencia", prompt: "Genera registro de horas trabajadas.", formulas: ["nomina"] },
+    "vacation-tracker": { title: "Control de Vacaciones", prompt: "Genera seguimiento de días libres.", formulas: ["nomina"] },
+    "performance-review": { title: "Evaluación de Desempeño", prompt: "Genera evaluaciones de personal.", formulas: ["kpi", "nomina"] },
+    "recruitment-tracker": { title: "Seguimiento de Reclutamiento", prompt: "Genera control de procesos de selección.", formulas: ["kpi"] },
+    "training-matrix": { title: "Matriz de Capacitación", prompt: "Genera plan de formación y cursos.", formulas: ["kpi", "nomina"] },
+    "overtime-calculator": { title: "Cálculo de Horas Extra", prompt: "Genera control de tiempo extra.", formulas: ["nomina"] },
+    
+    // Gestión de Proyectos
+    "project": { title: "Gestión de Proyecto", prompt: "Genera cronograma y seguimiento de tareas.", formulas: ["presupuesto", "kpi"] },
+    "gantt-chart": { title: "Diagrama Gantt", prompt: "Genera línea de tiempo del proyecto.", formulas: ["kpi"] },
+    "task-tracker": { title: "Seguimiento de Tareas", prompt: "Genera lista de tareas con estados.", formulas: ["kpi"] },
+    "resource-allocation": { title: "Asignación de Recursos", prompt: "Genera distribución de personal y recursos.", formulas: ["presupuesto", "nomina"] },
+    "project-budget": { title: "Presupuesto de Proyecto", prompt: "Genera control de costos del proyecto.", formulas: ["presupuesto", "finanzas"] },
+    "risk-register": { title: "Registro de Riesgos", prompt: "Genera identificación y mitigación de riesgos.", formulas: ["kpi"] },
+    "milestone-tracker": { title: "Seguimiento de Hitos", prompt: "Genera control de entregables clave.", formulas: ["kpi"] },
+    
+    // Facturación
+    "invoice-tracker": { title: "Control de Facturas", prompt: "Genera registro y seguimiento de facturas.", formulas: ["facturas", "contabilidad"] },
+    "invoice-template": { title: "Plantilla de Factura", prompt: "Genera factura comercial con cálculos.", formulas: ["facturas"] },
+    "quote-template": { title: "Plantilla de Cotización", prompt: "Genera presupuesto para clientes.", formulas: ["ventas", "facturas"] },
+    "expense-claim": { title: "Reembolso de Gastos", prompt: "Genera solicitud de reembolso.", formulas: ["contabilidad"] },
+    
+    // KPIs y Métricas
+    "kpi": { title: "Indicadores KPI", prompt: "Genera dashboard de indicadores clave de rendimiento.", formulas: ["kpi", "finanzas"] },
+    "scorecard": { title: "Balanced Scorecard", prompt: "Genera cuadro de mando integral.", formulas: ["kpi", "finanzas"] },
+    "okr-tracker": { title: "Seguimiento de OKRs", prompt: "Genera objetivos y resultados clave.", formulas: ["kpi"] },
+    "metrics-dashboard": { title: "Panel de Métricas", prompt: "Genera indicadores consolidados.", formulas: ["kpi", "finanzas"] },
+    
+    // Reportes
+    "report": { title: "Informe General", prompt: "Genera informe con tablas y resúmenes.", formulas: ["finanzas", "kpi"] },
+    "weekly-report": { title: "Informe Semanal", prompt: "Genera reporte de actividades semanales.", formulas: ["kpi"] },
+    "monthly-report": { title: "Informe Mensual", prompt: "Genera resumen mensual de operaciones.", formulas: ["finanzas", "kpi"] },
+    "annual-report": { title: "Informe Anual", prompt: "Genera reporte anual consolidado.", formulas: ["finanzas", "contabilidad", "kpi"] },
+    
+    // Otros
+    "calendar": { title: "Calendario", prompt: "Genera calendario con eventos y fechas.", formulas: ["kpi"] },
+    "checklist": { title: "Lista de Verificación", prompt: "Genera checklist con estados.", formulas: ["kpi"] },
+    "contact-list": { title: "Directorio de Contactos", prompt: "Genera lista de contactos organizada.", formulas: [] },
+    "event-planner": { title: "Planificador de Eventos", prompt: "Genera organización de eventos.", formulas: ["presupuesto"] },
+    "macros": { title: "Plantilla con Macros", prompt: "Genera plantilla con datos y código VBA.", formulas: ["contabilidad", "finanzas", "ventas"] },
+    "custom": { title: "Personalizado", prompt: "Genera estructura personalizada según la descripción.", formulas: ["contabilidad", "finanzas", "ventas", "inventario", "nomina", "presupuesto", "kpi", "facturas"] },
+  };
+  
+  const config = configs[templateType];
+  if (config) return config;
+  
+  // Default for unknown templates
+  return {
+    title: templateType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    prompt: `Genera una plantilla Excel profesional para "${templateType}" con datos, fórmulas y análisis.`,
+    formulas: ["contabilidad", "finanzas", "kpi"]
+  };
 };
 
 serve(async (req) => {
@@ -500,157 +266,79 @@ serve(async (req) => {
   }
 
   try {
-    // Rate limiting
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
+                     req.headers.get('x-real-ip') || 'unknown';
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Check rate limit (10 requests per minute for XLSX generation)
-    const { data: isAllowed, error: rateLimitError } = await supabase
-      .rpc('check_api_rate_limit', { 
-        p_ip_address: clientIp, 
-        p_endpoint: 'generate-xlsx',
-        p_max_requests: 10,
-        p_window_minutes: 1
-      });
-    
-    if (rateLimitError) {
-      console.error('Rate limit check error:', rateLimitError);
-    }
+    const { data: isAllowed } = await supabase.rpc('check_api_rate_limit', { 
+      p_ip_address: clientIp, p_endpoint: 'generate-xlsx', p_max_requests: 10, p_window_minutes: 1
+    });
     
     if (isAllowed === false) {
-      console.log(`Rate limit exceeded for IP: ${clientIp}`);
-      return new Response(
-        JSON.stringify({ error: 'Demasiadas solicitudes. Por favor espera un momento.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Demasiadas solicitudes. Espera un momento.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     
-    // Record this request (fire and forget)
-    void supabase.rpc('record_api_request', { 
-      p_ip_address: clientIp, 
-      p_endpoint: 'generate-xlsx' 
-    });
-    const body = await req.json();
-    console.log("generate-xlsx: Body parsed", JSON.stringify(body).substring(0, 200));
+    void supabase.rpc('record_api_request', { p_ip_address: clientIp, p_endpoint: 'generate-xlsx' });
     
+    const body = await req.json();
     const { templateType, description, customTitle, importedData, includeCharts } = body;
 
     if (!templateType || !description) {
-      console.log("generate-xlsx: Missing required fields");
-      return new Response(
-        JSON.stringify({ error: "Se requiere tipo de plantilla y descripción" }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Se requiere tipo de plantilla y descripción" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const template = templates[templateType];
-    if (!template) {
-      console.log("generate-xlsx: Invalid template type", templateType);
-      return new Response(
-        JSON.stringify({ error: "Tipo de plantilla no válido" }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const templateConfig = getXlsxSystemPrompt(templateType);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      console.error("generate-xlsx: LOVABLE_API_KEY not found");
-      return new Response(
-        JSON.stringify({ error: "Error de configuración del servidor" }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Error de configuración del servidor" }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const hasImportedData = importedData && importedData.trim().length > 0;
-
-    // Build formulas section based on template type
-    const relevantFormulas = template.formulas
-      .map(cat => formulaCategories[cat as keyof typeof formulaCategories])
+    
+    const relevantFormulas = templateConfig.formulas
+      .map((cat: string) => formulaCategories[cat as keyof typeof formulaCategories])
       .filter(Boolean)
       .join('\n\n');
 
     const chartInstructions = includeCharts ? `
-También crea una sección adicional separada con "--- HOJA: Resumen y Análisis" que incluya:
-- Resumen con totales, promedios, máximos, mínimos
-- KPIs calculados automáticamente
-- Datos agregados por categoría listos para gráficos
-- Fórmulas de tendencia y proyección` : '';
+También crea "--- HOJA: Resumen y Análisis" con totales, promedios, KPIs y datos para gráficos.` : '';
 
-    const systemPrompt = `Eres un experto en Excel, contabilidad, finanzas y análisis de datos. ${template.systemPrompt}
+    const systemPrompt = `Eres experto en Excel, contabilidad y análisis de datos. ${templateConfig.prompt}
 
-REGLAS OBLIGATORIAS:
-1. Genera datos en formato tabla usando | (pipe) como separador
-2. Primera fila = encabezados profesionales y claros
-3. Datos REALISTAS, PROFESIONALES y ÚTILES (no genéricos)
-4. Para múltiples hojas usa "--- HOJA: NombreHoja" en línea separada
-5. INCLUYE TODAS LAS FÓRMULAS RELEVANTES en notación Excel (=SUMA, =PROMEDIO, =SI, etc.)
-6. Agrega una fila de TOTALES/RESUMEN con fórmulas al final de cada tabla numérica
-7. Incluye columnas calculadas con fórmulas donde sea apropiado
-8. USA EMOJIS para estados: ✅ Completado, 🟢 OK, 🟡 Atención, 🔴 Crítico, ⚠️ Alerta
-9. MÍNIMO 15-20 filas de datos por hoja principal
-10. Incluye validaciones con =SI() para estados automáticos
-${hasImportedData ? '11. Usa los datos CSV importados como base y aplica las fórmulas' : ''}
+REGLAS:
+1. Usa | (pipe) como separador de columnas
+2. Primera fila = encabezados claros
+3. Datos REALISTAS y PROFESIONALES
+4. Para múltiples hojas usa "--- HOJA: NombreHoja"
+5. INCLUYE FÓRMULAS EXCEL (=SUMA, =PROMEDIO, =SI, etc.)
+6. Fila de TOTALES con fórmulas al final
+7. Columnas calculadas con fórmulas
+8. USA EMOJIS: ✅ 🟢 🟡 🔴 ⚠️
+9. MÍNIMO 15 filas de datos
+10. Validaciones con =SI()
 ${chartInstructions}
-
-ESTRUCTURA REQUERIDA:
-${template.structure}
 
 ${relevantFormulas}
 
-FÓRMULAS EXCEL A USAR:
-- =SUMA(rango) para totales
-- =PROMEDIO(rango) para promedios  
-- =MAX(rango), =MIN(rango) para extremos
-- =SI(condición, verdadero, falso) para estados y validaciones
-- =BUSCARV(valor, rango, columna, falso) para búsquedas
-- =SUMAR.SI(rango_criterio, criterio, rango_suma) para sumas por categoría
-- =CONTAR.SI(rango, criterio) para conteos condicionales
-- =REDONDEAR(número, decimales) para redondeos
-- =CONCATENAR() o & para unir texto
-- =HOY() para fecha actual
-- =DIAS(fecha_fin, fecha_inicio) para diferencia de días
-- =PORCENTAJE: valor/total*100
+FÓRMULAS A USAR: =SUMA, =PROMEDIO, =MAX, =MIN, =SI, =BUSCARV, =SUMAR.SI, =CONTAR.SI, =HOY()`;
 
-${template.columns.length > 0 ? `Columnas sugeridas: ${template.columns.join(', ')}` : ''}
-
-FORMATO EJEMPLO:
---- HOJA: Datos
-| Producto | Cantidad | Precio | Total | Margen | Estado |
-| Producto A | 10 | 100 | =B2*C2 | =D2*0.3 | =SI(D2>500,"🟢","🟡") |
-| Producto B | 5 | 200 | =B3*C3 | =D3*0.3 | =SI(D3>500,"🟢","🟡") |
-| TOTAL | =SUMA(B2:B3) | =PROMEDIO(C2:C3) | =SUMA(D2:D3) | =SUMA(E2:E3) | |
-
---- HOJA: Resumen
-| Métrica | Valor |
-| Total Productos | =CONTARA('Datos'!A:A)-1 |
-| Venta Total | =SUMA('Datos'!D:D) |
-| Margen Promedio | =PROMEDIO('Datos'!E:E) |`;
-
-    let userMessage = `Genera un Excel profesional para: ${description}
-
-IMPORTANTE: 
-- Incluye TODAS las fórmulas necesarias para cálculos automáticos
-- Agrega filas de totales con =SUMA(), =PROMEDIO(), etc.
-- Incluye columnas calculadas donde aplique
-- Usa formato de fórmula Excel real (=FORMULA)`;
-    
+    let userMessage = `Genera Excel profesional para: ${description}`;
     if (hasImportedData) {
-      userMessage += `\n\nDATOS CSV IMPORTADOS (usar como base):\n${importedData.substring(0, 8000)}`;
+      userMessage += `\n\nDATOS IMPORTADOS:\n${importedData.substring(0, 8000)}`;
     }
 
-    console.log("generate-xlsx: Calling AI API with formulas");
+    console.log("generate-xlsx: Calling AI for", templateType);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash-lite',
         messages: [
@@ -660,59 +348,33 @@ IMPORTANTE:
       }),
     });
 
-    console.log("generate-xlsx: AI response status", response.status);
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("generate-xlsx: AI API Error", response.status, errorText);
-      
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Límite de solicitudes excedido. Intenta en unos momentos." }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: "Límite excedido. Intenta después." }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes." }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: "Créditos insuficientes." }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-      return new Response(
-        JSON.stringify({ error: "Error al conectar con el servicio de IA" }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error("Error al conectar con IA");
     }
 
     const data = await response.json();
-    console.log("generate-xlsx: AI response received");
-    
     const content = data.choices?.[0]?.message?.content || "";
     
     if (!content) {
-      console.error("generate-xlsx: Empty content from AI");
-      return new Response(
-        JSON.stringify({ error: "No se generó contenido. Intenta de nuevo." }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "No se generó contenido." }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    console.log("generate-xlsx: Success, content length", content.length);
-
-    return new Response(
-      JSON.stringify({
-        content,
-        title: customTitle || template.title,
-        templateType
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({
+      content, title: customTitle || templateConfig.title, templateType
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
     console.error("generate-xlsx: Error", error);
-    return new Response(
-      JSON.stringify({ error: "Ocurrió un error inesperado. Por favor intenta de nuevo." }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ error: "Error inesperado. Intenta de nuevo." }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
