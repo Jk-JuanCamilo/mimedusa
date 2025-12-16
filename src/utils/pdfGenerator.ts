@@ -69,34 +69,34 @@ export async function generatePDF({ title, content, templateType }: PDFGenerator
     }
   };
   
-  // Draw title
-  const titleFontSize = 18;
+  // Draw title - Professional black styling
+  const titleFontSize = 20;
   const titleWidth = timesRomanBoldFont.widthOfTextAtSize(title.toUpperCase(), titleFontSize);
   currentPage.drawText(title.toUpperCase(), {
     x: (pageWidth - titleWidth) / 2,
     y: yPosition,
     size: titleFontSize,
     font: timesRomanBoldFont,
-    color: rgb(0.1, 0.1, 0.4),
+    color: rgb(0, 0, 0),
   });
-  yPosition -= 30;
+  yPosition -= 35;
   
-  // Draw a line under the title
+  // Draw a line under the title - Clean black line
   currentPage.drawLine({
     start: { x: margin, y: yPosition + 10 },
     end: { x: pageWidth - margin, y: yPosition + 10 },
-    thickness: 1,
-    color: rgb(0.3, 0.3, 0.6),
+    thickness: 1.5,
+    color: rgb(0, 0, 0),
   });
-  yPosition -= 20;
+  yPosition -= 25;
   
-  // Add date
+  // Add date - Professional gray
   const date = new Date().toLocaleDateString('es-ES', {
     day: 'numeric',
     month: 'long',
     year: 'numeric'
   });
-  drawText(`Fecha: ${date}`, 10, timesRomanFont, rgb(0.4, 0.4, 0.4));
+  drawText(`Fecha: ${date}`, 10, timesRomanFont, rgb(0.3, 0.3, 0.3));
   yPosition -= 20;
   
   // Process content - split by lines and handle sections
@@ -117,13 +117,13 @@ export async function generatePDF({ title, content, templateType }: PDFGenerator
                      /^[A-ZÁÉÍÓÚÑ\s]+:?$/.test(trimmedLine);
     
     if (isHeader) {
-      yPosition -= 10; // Extra spacing before headers
+      yPosition -= 12; // Extra spacing before headers
       const headerText = trimmedLine.replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/:$/, '');
       if (yPosition < margin + lineHeight * 2) {
         addNewPage();
       }
-      drawText(headerText, 12, timesRomanBoldFont, rgb(0.2, 0.2, 0.5));
-      yPosition -= 5;
+      drawText(headerText.toUpperCase(), 12, timesRomanBoldFont, rgb(0, 0, 0));
+      yPosition -= 8;
     } else {
       // Regular text - clean up markdown
       const cleanText = trimmedLine
@@ -137,17 +137,25 @@ export async function generatePDF({ title, content, templateType }: PDFGenerator
     }
   }
   
-  // Add footer on all pages
+  // Add footer on all pages - Professional styling
   const pages = pdfDoc.getPages();
   pages.forEach((page, index) => {
-    const footerText = `Página ${index + 1} de ${pages.length} - Generado por Medussa IA`;
-    const footerWidth = timesRomanFont.widthOfTextAtSize(footerText, 8);
+    // Footer line
+    page.drawLine({
+      start: { x: margin, y: 40 },
+      end: { x: pageWidth - margin, y: 40 },
+      thickness: 0.5,
+      color: rgb(0.6, 0.6, 0.6),
+    });
+    
+    const footerText = `Página ${index + 1} de ${pages.length} — Generado por Medussa IA`;
+    const footerWidth = timesRomanFont.widthOfTextAtSize(footerText, 9);
     page.drawText(footerText, {
       x: (pageWidth - footerWidth) / 2,
       y: 25,
-      size: 8,
+      size: 9,
       font: timesRomanFont,
-      color: rgb(0.5, 0.5, 0.5),
+      color: rgb(0.4, 0.4, 0.4),
     });
   });
   
