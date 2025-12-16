@@ -39,22 +39,80 @@ interface PreviewData {
 }
 
 const templateOptions = [
-  { value: "contract", label: "📜 Contrato", description: "Contratos de trabajo, alquiler, servicios" },
+  // Documentos Comerciales
+  { value: "contract", label: "📜 Contrato General", description: "Contratos de trabajo, alquiler, servicios" },
   { value: "invoice", label: "🧾 Factura", description: "Facturas comerciales con desglose" },
+  { value: "quote", label: "💰 Cotización", description: "Presupuestos y cotizaciones" },
+  { value: "receipt", label: "🧾 Recibo", description: "Recibos de pago y comprobantes" },
+  { value: "proposal", label: "💼 Propuesta Comercial", description: "Propuestas de negocio persuasivas" },
+  { value: "purchase-order", label: "📦 Orden de Compra", description: "Pedidos a proveedores" },
+  { value: "delivery-note", label: "🚚 Remisión", description: "Nota de entrega de mercancía" },
+  { value: "credit-note", label: "💳 Nota Crédito", description: "Devoluciones y ajustes" },
+  
+  // Contratos Específicos
+  { value: "rental-contract", label: "🏠 Contrato Arriendo", description: "Arrendamiento de vivienda o local" },
+  { value: "work-contract", label: "👔 Contrato Laboral", description: "Contrato de trabajo completo" },
+  { value: "service-contract", label: "🔧 Contrato Servicios", description: "Prestación de servicios profesionales" },
+  { value: "sales-contract", label: "🤝 Contrato Compraventa", description: "Compra y venta de bienes" },
+  { value: "loan-contract", label: "💵 Contrato Préstamo", description: "Préstamo de dinero entre partes" },
+  { value: "partnership-agreement", label: "🤝 Acuerdo de Sociedad", description: "Constitución de sociedades" },
+  { value: "franchise-agreement", label: "🏪 Contrato Franquicia", description: "Acuerdo de franquicia comercial" },
+  
+  // Documentos Laborales
   { value: "cv", label: "📋 Currículum Vitae", description: "CV profesional estructurado" },
   { value: "letter", label: "✉️ Carta Formal", description: "Cartas de presentación, renuncia, etc." },
-  { value: "quote", label: "💰 Cotización", description: "Presupuestos y cotizaciones" },
-  { value: "certificate", label: "🏆 Certificado", description: "Diplomas y reconocimientos" },
+  { value: "recommendation-letter", label: "⭐ Carta Recomendación", description: "Recomendación laboral o académica" },
+  { value: "resignation-letter", label: "👋 Carta de Renuncia", description: "Renuncia profesional y cordial" },
+  { value: "termination-letter", label: "📍 Carta Terminación", description: "Terminación de contrato laboral" },
+  { value: "work-certificate", label: "📄 Constancia Laboral", description: "Certificación de trabajo" },
+  { value: "salary-certificate", label: "💰 Certificado Salarial", description: "Certificación de ingresos" },
+  { value: "experience-certificate", label: "🎯 Certificado Experiencia", description: "Constancia de experiencia laboral" },
+  
+  // Documentos Legales
   { value: "nda", label: "🔒 NDA", description: "Acuerdo de confidencialidad" },
-  { value: "report", label: "📊 Reporte/Informe", description: "Informes profesionales" },
-  { value: "receipt", label: "🧾 Recibo", description: "Recibos de pago y comprobantes" },
-  { value: "memo", label: "📝 Memorando", description: "Comunicaciones internas empresariales" },
-  { value: "minutes", label: "📋 Acta", description: "Actas de reunión y asambleas" },
+  { value: "power-of-attorney", label: "⚖️ Poder Notarial", description: "Poder legal con facultades" },
+  { value: "affidavit", label: "📜 Declaración Jurada", description: "Declaración bajo juramento" },
+  { value: "promissory-note", label: "📝 Pagaré", description: "Documento de deuda" },
+  { value: "lease-termination", label: "🏠 Terminación Arriendo", description: "Fin de contrato de arriendo" },
+  { value: "waiver", label: "✋ Exoneración", description: "Liberación de responsabilidad" },
+  
+  // Documentos Judiciales
   { value: "tutela", label: "⚖️ Tutela", description: "Acción de tutela para protección de derechos" },
   { value: "lawsuit", label: "⚖️ Demanda", description: "Demandas civiles y laborales" },
   { value: "petition", label: "📄 Derecho de Petición", description: "Solicitudes formales a entidades" },
   { value: "pqr", label: "📨 PQR", description: "Peticiones, quejas y reclamos" },
-  { value: "complaint", label: "📢 Queja", description: "Quejas formales ante autoridades" },
+  { value: "complaint", label: "📢 Queja Formal", description: "Quejas formales ante autoridades" },
+  { value: "appeal", label: "🔄 Recurso de Apelación", description: "Apelación de decisiones" },
+  { value: "habeas-corpus", label: "🔓 Habeas Corpus", description: "Protección de libertad personal" },
+  { value: "custody-request", label: "👨‍👧 Solicitud Custodia", description: "Petición de custodia de menores" },
+  
+  // Documentos Corporativos
+  { value: "report", label: "📊 Reporte/Informe", description: "Informes profesionales" },
+  { value: "memo", label: "📝 Memorando", description: "Comunicaciones internas empresariales" },
+  { value: "minutes", label: "📋 Acta de Reunión", description: "Actas de reunión y asambleas" },
+  { value: "board-resolution", label: "🏛️ Resolución Junta", description: "Decisiones de junta directiva" },
+  { value: "shareholders-meeting", label: "👥 Acta Asamblea", description: "Acta de asamblea de accionistas" },
+  { value: "company-policy", label: "📑 Política Empresarial", description: "Políticas y procedimientos internos" },
+  
+  // Documentos Académicos
+  { value: "thesis-cover", label: "🎓 Portada Tesis", description: "Portada formal para tesis" },
+  { value: "academic-certificate", label: "📜 Certificado Académico", description: "Constancia de estudios" },
+  { value: "enrollment-letter", label: "🏫 Carta Matrícula", description: "Constancia de matrícula" },
+  { value: "academic-recommendation", label: "📚 Recomendación Académica", description: "Carta de recomendación académica" },
+  { value: "research-proposal", label: "🔬 Propuesta Investigación", description: "Propuesta de proyecto de investigación" },
+  
+  // Certificados y Reconocimientos
+  { value: "certificate", label: "🏆 Certificado", description: "Diplomas y reconocimientos" },
+  { value: "achievement-award", label: "🥇 Reconocimiento", description: "Premio o reconocimiento especial" },
+  { value: "participation-certificate", label: "📜 Certificado Participación", description: "Constancia de asistencia o participación" },
+  { value: "training-certificate", label: "🎯 Certificado Capacitación", description: "Constancia de curso o capacitación" },
+  
+  // Documentos Personales
+  { value: "authorization", label: "✅ Autorización", description: "Autorización para trámites" },
+  { value: "consent-form", label: "📝 Consentimiento", description: "Formulario de consentimiento informado" },
+  { value: "medical-excuse", label: "🏥 Excusa Médica", description: "Justificación por motivos de salud" },
+  { value: "travel-authorization", label: "✈️ Permiso de Viaje", description: "Autorización de viaje para menores" },
+  { value: "will-testament", label: "📜 Testamento", description: "Última voluntad y testamento" },
 ];
 
 export function PDFGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated }: PDFGeneratorDialogProps) {
