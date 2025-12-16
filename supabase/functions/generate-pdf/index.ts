@@ -6,88 +6,120 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Plantillas de documentos
-const templates: Record<string, { title: string; systemPrompt: string; sections: string[] }> = {
-  contract: {
-    title: "Contrato",
-    systemPrompt: `Eres un experto en redacción de contratos legales. Genera un contrato profesional basado en la descripción del usuario. El contrato debe incluir todas las cláusulas necesarias, términos claros y lenguaje legal apropiado. Responde SOLO con el contenido del contrato, sin explicaciones adicionales.`,
-    sections: ["Partes", "Objeto", "Obligaciones", "Duración", "Precio", "Incumplimiento", "Jurisdicción", "Firmas"]
-  },
-  invoice: {
-    title: "Factura",
-    systemPrompt: `Eres un experto en documentos comerciales. Genera una factura profesional basada en la descripción del usuario. Incluye todos los campos necesarios como datos del emisor, receptor, conceptos, cantidades, precios unitarios, subtotales, impuestos y total. Responde SOLO con el contenido de la factura en formato estructurado.`,
-    sections: ["Datos Emisor", "Datos Cliente", "Fecha", "Número de Factura", "Conceptos", "Subtotal", "IVA", "Total"]
-  },
-  cv: {
-    title: "Currículum Vitae",
-    systemPrompt: `Eres un experto en recursos humanos y redacción de CVs. Genera un currículum profesional basado en la información del usuario. Debe ser claro, conciso y destacar las habilidades y experiencia relevantes. Responde SOLO con el contenido del CV estructurado.`,
-    sections: ["Datos Personales", "Perfil Profesional", "Experiencia Laboral", "Educación", "Habilidades", "Idiomas", "Referencias"]
-  },
-  letter: {
-    title: "Carta Formal",
-    systemPrompt: `Eres un experto en comunicación empresarial. Genera una carta formal profesional basada en la descripción del usuario. Debe tener un tono apropiado, estructura correcta y contenido claro. Responde SOLO con el contenido de la carta.`,
-    sections: ["Encabezado", "Fecha", "Destinatario", "Saludo", "Cuerpo", "Despedida", "Firma"]
-  },
-  quote: {
-    title: "Cotización",
-    systemPrompt: `Eres un experto en documentos comerciales. Genera una cotización profesional basada en la descripción del usuario. Incluye descripción detallada de productos/servicios, precios, condiciones y validez. Responde SOLO con el contenido de la cotización estructurada.`,
-    sections: ["Datos Empresa", "Cliente", "Fecha", "Validez", "Descripción", "Precios", "Condiciones", "Total"]
-  },
-  certificate: {
-    title: "Certificado",
-    systemPrompt: `Eres un experto en documentos oficiales. Genera un certificado profesional basado en la descripción del usuario. Debe tener un formato formal y contenido apropiado para el tipo de certificación. Responde SOLO con el contenido del certificado.`,
-    sections: ["Título", "Institución", "Beneficiario", "Logro/Reconocimiento", "Fecha", "Firma", "Sello"]
-  },
-  nda: {
-    title: "Acuerdo de Confidencialidad (NDA)",
-    systemPrompt: `Eres un experto en documentos legales. Genera un acuerdo de confidencialidad (NDA) profesional basado en la descripción del usuario. Debe incluir definición de información confidencial, obligaciones, excepciones, duración y consecuencias. Responde SOLO con el contenido del NDA.`,
-    sections: ["Partes", "Definiciones", "Información Confidencial", "Obligaciones", "Excepciones", "Duración", "Incumplimiento", "Firmas"]
-  },
-  report: {
-    title: "Reporte/Informe",
-    systemPrompt: `Eres un experto en redacción de informes profesionales. Genera un informe estructurado basado en la descripción del usuario. Debe ser claro, objetivo y bien organizado. Responde SOLO con el contenido del informe.`,
-    sections: ["Título", "Resumen Ejecutivo", "Introducción", "Desarrollo", "Resultados", "Conclusiones", "Recomendaciones"]
-  },
-  receipt: {
-    title: "Recibo",
-    systemPrompt: `Eres un experto en documentos comerciales. Genera un recibo de pago profesional basado en la descripción del usuario. Incluye datos del pagador, receptor, concepto, monto, fecha y forma de pago. Responde SOLO con el contenido del recibo estructurado.`,
-    sections: ["Número de Recibo", "Fecha", "Receptor", "Pagador", "Concepto", "Monto", "Forma de Pago", "Firma"]
-  },
-  memo: {
-    title: "Memorando",
-    systemPrompt: `Eres un experto en comunicación corporativa. Genera un memorando profesional basado en la descripción del usuario. Debe ser claro, directo y con formato empresarial estándar. Responde SOLO con el contenido del memorando.`,
-    sections: ["Para", "De", "Fecha", "Asunto", "Cuerpo", "Anexos", "Firma"]
-  },
-  minutes: {
-    title: "Acta",
-    systemPrompt: `Eres un experto en documentación corporativa. Genera un acta de reunión profesional basada en la descripción del usuario. Debe incluir todos los puntos tratados, decisiones tomadas y compromisos. Responde SOLO con el contenido del acta estructurada.`,
-    sections: ["Fecha y Hora", "Lugar", "Asistentes", "Orden del Día", "Desarrollo", "Acuerdos", "Compromisos", "Firmas"]
-  },
-  tutela: {
-    title: "Acción de Tutela",
-    systemPrompt: `Eres un experto en derecho constitucional colombiano. Genera una acción de tutela profesional basada en la descripción del usuario. Debe incluir los hechos, derechos vulnerados, pretensiones y fundamentos jurídicos según la legislación colombiana. Responde SOLO con el contenido de la tutela estructurada.`,
-    sections: ["Accionante", "Accionado", "Hechos", "Derechos Fundamentales Vulnerados", "Pretensiones", "Fundamentos Jurídicos", "Pruebas", "Notificaciones", "Firma"]
-  },
-  lawsuit: {
-    title: "Demanda",
-    systemPrompt: `Eres un experto en derecho procesal. Genera una demanda profesional basada en la descripción del usuario. Debe incluir identificación de las partes, hechos, pretensiones, fundamentos de derecho y pruebas según normativa legal. Responde SOLO con el contenido de la demanda estructurada.`,
-    sections: ["Demandante", "Demandado", "Pretensiones", "Hechos", "Fundamentos de Derecho", "Pruebas", "Cuantía", "Competencia", "Notificaciones", "Firma"]
-  },
-  petition: {
-    title: "Derecho de Petición",
-    systemPrompt: `Eres un experto en derecho administrativo colombiano. Genera un derecho de petición profesional basado en la descripción del usuario. Debe ser claro, respetuoso y fundamentado en el artículo 23 de la Constitución Política. Responde SOLO con el contenido del derecho de petición estructurado.`,
-    sections: ["Destinatario", "Peticionario", "Asunto", "Hechos", "Petición", "Fundamentos", "Notificaciones", "Firma"]
-  },
-  pqr: {
-    title: "PQR (Petición, Queja o Reclamo)",
-    systemPrompt: `Eres un experto en atención al ciudadano y derechos del consumidor. Genera un PQR profesional basado en la descripción del usuario. Debe ser claro, con hechos concretos y la solicitud específica. Responde SOLO con el contenido del PQR estructurado.`,
-    sections: ["Tipo (Petición/Queja/Reclamo)", "Entidad Destinataria", "Datos del Ciudadano", "Asunto", "Hechos", "Solicitud", "Fundamentos", "Anexos", "Firma"]
-  },
-  complaint: {
-    title: "Queja Formal",
-    systemPrompt: `Eres un experto en derecho y procedimientos de queja. Genera una queja formal profesional basada en la descripción del usuario. Debe incluir los hechos detallados, la normativa vulnerada y la solicitud específica. Responde SOLO con el contenido de la queja estructurada.`,
-    sections: ["Autoridad Destinataria", "Quejoso", "Querellado", "Hechos", "Normativa Vulnerada", "Pruebas", "Solicitud", "Notificaciones", "Firma"]
-  }
+// Sistema de prompts dinámico basado en categorías
+const getSystemPrompt = (templateType: string): string => {
+  const prompts: Record<string, string> = {
+    // Documentos Comerciales
+    contract: "Genera un contrato profesional con cláusulas legales, términos claros y estructura formal.",
+    invoice: "Genera una factura comercial con datos de emisor, receptor, conceptos, cantidades, precios, impuestos y totales.",
+    quote: "Genera una cotización profesional con descripción de productos/servicios, precios y condiciones.",
+    receipt: "Genera un recibo de pago con datos del pagador, receptor, concepto, monto y forma de pago.",
+    proposal: "Genera una propuesta comercial persuasiva con objetivos, alcance, metodología e inversión.",
+    "purchase-order": "Genera una orden de compra con datos del proveedor, productos, cantidades y condiciones.",
+    "delivery-note": "Genera una nota de remisión/entrega de mercancía con detalles de productos entregados.",
+    "credit-note": "Genera una nota de crédito con justificación, montos y referencias.",
+    
+    // Contratos Específicos
+    "rental-contract": "Genera un contrato de arrendamiento completo con términos, obligaciones y condiciones legales.",
+    "work-contract": "Genera un contrato laboral con funciones, salario, jornada y términos de empleo.",
+    "service-contract": "Genera un contrato de prestación de servicios profesionales con alcance y honorarios.",
+    "sales-contract": "Genera un contrato de compraventa con descripción del bien, precio y condiciones.",
+    "loan-contract": "Genera un contrato de préstamo con monto, intereses, plazos y garantías.",
+    "partnership-agreement": "Genera un acuerdo de sociedad con aportes, participaciones y responsabilidades.",
+    "franchise-agreement": "Genera un contrato de franquicia con derechos, obligaciones y regalías.",
+    
+    // Documentos Laborales
+    cv: "Genera un currículum profesional estructurado con perfil, experiencia, educación y habilidades.",
+    letter: "Genera una carta formal profesional con estructura correcta y tono apropiado.",
+    "recommendation-letter": "Genera una carta de recomendación destacando cualidades y logros profesionales.",
+    "resignation-letter": "Genera una carta de renuncia profesional y respetuosa.",
+    "termination-letter": "Genera una carta de terminación de contrato con motivos y fechas.",
+    "work-certificate": "Genera una constancia laboral certificando empleo, cargo y período.",
+    "salary-certificate": "Genera un certificado de ingresos/salario con datos verificables.",
+    "experience-certificate": "Genera un certificado de experiencia laboral detallando funciones y logros.",
+    
+    // Documentos Legales
+    nda: "Genera un acuerdo de confidencialidad (NDA) con definiciones, obligaciones y consecuencias.",
+    "power-of-attorney": "Genera un poder notarial con facultades específicas y limitaciones.",
+    affidavit: "Genera una declaración jurada formal con hechos bajo juramento.",
+    "promissory-note": "Genera un pagaré con monto, plazo, intereses y condiciones de pago.",
+    "lease-termination": "Genera un documento de terminación de contrato de arrendamiento.",
+    waiver: "Genera un documento de exoneración de responsabilidad.",
+    
+    // Documentos Judiciales
+    tutela: "Genera una acción de tutela según legislación colombiana con hechos, derechos vulnerados y pretensiones.",
+    lawsuit: "Genera una demanda con identificación de partes, hechos, pretensiones y fundamentos de derecho.",
+    petition: "Genera un derecho de petición formal con hechos, fundamentos y solicitud específica.",
+    pqr: "Genera un PQR (Petición, Queja o Reclamo) estructurado con hechos y solicitud.",
+    complaint: "Genera una queja formal con hechos detallados, normativa vulnerada y solicitud.",
+    appeal: "Genera un recurso de apelación con fundamentos y argumentos legales.",
+    "habeas-corpus": "Genera un habeas corpus para protección de libertad personal.",
+    "custody-request": "Genera una solicitud de custodia de menores con fundamentos.",
+    
+    // Documentos Corporativos
+    report: "Genera un informe profesional con resumen ejecutivo, análisis, resultados y recomendaciones.",
+    memo: "Genera un memorando empresarial interno con asunto claro y contenido directo.",
+    minutes: "Genera un acta de reunión con asistentes, temas tratados, acuerdos y compromisos.",
+    "board-resolution": "Genera una resolución de junta directiva con decisiones formales.",
+    "shareholders-meeting": "Genera un acta de asamblea de accionistas/socios.",
+    "company-policy": "Genera un documento de política empresarial con procedimientos y normas.",
+    
+    // Documentos Académicos
+    "thesis-cover": "Genera una portada formal de tesis con título, autor e institución.",
+    "academic-certificate": "Genera un certificado académico con información de estudios.",
+    "enrollment-letter": "Genera una constancia de matrícula académica.",
+    "academic-recommendation": "Genera una carta de recomendación académica para estudios o becas.",
+    "research-proposal": "Genera una propuesta de investigación con objetivos, metodología y cronograma.",
+    
+    // Certificados
+    certificate: "Genera un certificado formal de reconocimiento o logro.",
+    "achievement-award": "Genera un reconocimiento o premio por logros destacados.",
+    "participation-certificate": "Genera un certificado de participación en evento o actividad.",
+    "training-certificate": "Genera un certificado de capacitación o curso completado.",
+    
+    // Documentos Personales
+    authorization: "Genera una autorización formal para trámites o representación.",
+    "consent-form": "Genera un formulario de consentimiento informado.",
+    "medical-excuse": "Genera una excusa médica o justificación por motivos de salud.",
+    "travel-authorization": "Genera un permiso de viaje para menores de edad.",
+    "will-testament": "Genera un testamento o documento de última voluntad.",
+  };
+  
+  return prompts[templateType] || `Genera un documento profesional de tipo "${templateType}" con estructura apropiada y contenido de calidad.`;
+};
+
+const getDocumentTitle = (templateType: string): string => {
+  const titles: Record<string, string> = {
+    contract: "Contrato", invoice: "Factura", quote: "Cotización", receipt: "Recibo",
+    proposal: "Propuesta Comercial", "purchase-order": "Orden de Compra",
+    "delivery-note": "Remisión", "credit-note": "Nota Crédito",
+    "rental-contract": "Contrato de Arrendamiento", "work-contract": "Contrato Laboral",
+    "service-contract": "Contrato de Servicios", "sales-contract": "Contrato de Compraventa",
+    "loan-contract": "Contrato de Préstamo", "partnership-agreement": "Acuerdo de Sociedad",
+    "franchise-agreement": "Contrato de Franquicia",
+    cv: "Currículum Vitae", letter: "Carta Formal",
+    "recommendation-letter": "Carta de Recomendación", "resignation-letter": "Carta de Renuncia",
+    "termination-letter": "Carta de Terminación", "work-certificate": "Constancia Laboral",
+    "salary-certificate": "Certificado Salarial", "experience-certificate": "Certificado de Experiencia",
+    nda: "Acuerdo de Confidencialidad", "power-of-attorney": "Poder Notarial",
+    affidavit: "Declaración Jurada", "promissory-note": "Pagaré",
+    "lease-termination": "Terminación de Arriendo", waiver: "Exoneración",
+    tutela: "Acción de Tutela", lawsuit: "Demanda", petition: "Derecho de Petición",
+    pqr: "PQR", complaint: "Queja Formal", appeal: "Recurso de Apelación",
+    "habeas-corpus": "Habeas Corpus", "custody-request": "Solicitud de Custodia",
+    report: "Informe", memo: "Memorando", minutes: "Acta de Reunión",
+    "board-resolution": "Resolución de Junta", "shareholders-meeting": "Acta de Asamblea",
+    "company-policy": "Política Empresarial",
+    "thesis-cover": "Portada de Tesis", "academic-certificate": "Certificado Académico",
+    "enrollment-letter": "Constancia de Matrícula", "academic-recommendation": "Recomendación Académica",
+    "research-proposal": "Propuesta de Investigación",
+    certificate: "Certificado", "achievement-award": "Reconocimiento",
+    "participation-certificate": "Certificado de Participación", "training-certificate": "Certificado de Capacitación",
+    authorization: "Autorización", "consent-form": "Consentimiento Informado",
+    "medical-excuse": "Excusa Médica", "travel-authorization": "Permiso de Viaje",
+    "will-testament": "Testamento",
+  };
+  return titles[templateType] || templateType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
 serve(async (req) => {
@@ -96,109 +128,68 @@ serve(async (req) => {
   }
 
   try {
-    // Rate limiting
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
+                     req.headers.get('x-real-ip') || 'unknown';
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Check rate limit (10 requests per minute for PDF generation)
-    const { data: isAllowed, error: rateLimitError } = await supabase
-      .rpc('check_api_rate_limit', { 
-        p_ip_address: clientIp, 
-        p_endpoint: 'generate-pdf',
-        p_max_requests: 10,
-        p_window_minutes: 1
-      });
-    
-    if (rateLimitError) {
-      console.error('Rate limit check error:', rateLimitError);
-    }
+    const { data: isAllowed } = await supabase.rpc('check_api_rate_limit', { 
+      p_ip_address: clientIp, p_endpoint: 'generate-pdf', p_max_requests: 10, p_window_minutes: 1
+    });
     
     if (isAllowed === false) {
-      console.log(`Rate limit exceeded for IP: ${clientIp}`);
-      return new Response(
-        JSON.stringify({ error: 'Demasiadas solicitudes. Por favor espera un momento.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Demasiadas solicitudes. Por favor espera un momento.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     
-    // Record this request (fire and forget)
-    void supabase.rpc('record_api_request', { 
-      p_ip_address: clientIp, 
-      p_endpoint: 'generate-pdf' 
-    });
+    void supabase.rpc('record_api_request', { p_ip_address: clientIp, p_endpoint: 'generate-pdf' });
+    
     const { templateType, description, customTitle } = await req.json();
 
-    // Validación de entrada
     if (!templateType || !description) {
-      return new Response(
-        JSON.stringify({ error: 'Se requiere tipo de plantilla y descripción' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Se requiere tipo de plantilla y descripción' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (description.length > 5000) {
-      return new Response(
-        JSON.stringify({ error: 'La descripción es muy larga (máx. 5000 caracteres)' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const template = templates[templateType];
-    if (!template) {
-      return new Response(
-        JSON.stringify({ error: 'Tipo de plantilla no válido', availableTemplates: Object.keys(templates) }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'La descripción es muy larga (máx. 5000 caracteres)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
-      return new Response(
-        JSON.stringify({ error: "Servicio temporalmente no disponible." }),
-        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Servicio temporalmente no disponible." }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    console.log(`Generating PDF content for template: ${templateType}`);
+    const systemPrompt = getSystemPrompt(templateType);
+    const docTitle = getDocumentTitle(templateType);
+    
+    console.log(`Generating PDF: ${templateType}`);
 
-    // Generar contenido con IA
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: template.systemPrompt },
-          { role: "user", content: `Genera un ${template.title} basado en esta descripción:\n\n${description}\n\nAsegúrate de incluir las siguientes secciones: ${template.sections.join(", ")}.` }
+          { role: "system", content: `${systemPrompt}\n\nREGLAS:\n1. Genera contenido profesional y completo\n2. Usa formato con secciones claras (##)\n3. Incluye todos los datos necesarios\n4. Responde SOLO con el contenido del documento, sin explicaciones\n5. En español` },
+          { role: "user", content: `Genera un ${docTitle} basado en:\n\n${description}` }
         ],
         max_tokens: 4000,
       }),
     });
 
     if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("AI error:", aiResponse.status, errorText);
-      
       if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Límite de solicitudes excedido. Intenta de nuevo en unos segundos." }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: "Límite de solicitudes excedido." }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos agotados. Por favor recarga tu cuenta." }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: "Créditos agotados." }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       throw new Error("Error al generar contenido");
     }
@@ -206,29 +197,15 @@ serve(async (req) => {
     const aiData = await aiResponse.json();
     const generatedContent = aiData.choices?.[0]?.message?.content || "";
 
-    if (!generatedContent) {
-      throw new Error("No se pudo generar contenido");
-    }
+    if (!generatedContent) throw new Error("No se pudo generar contenido");
 
-    console.log("Content generated successfully");
-
-    // Devolver el contenido generado para que el frontend cree el PDF
-    return new Response(
-      JSON.stringify({
-        success: true,
-        content: generatedContent,
-        templateType,
-        title: customTitle || template.title,
-        sections: template.sections
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({
+      success: true, content: generatedContent, templateType, title: customTitle || docTitle
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
-    console.error('Error in generate-pdf function:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ocurrió un error inesperado. Por favor intenta de nuevo.' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error('Error:', error);
+    return new Response(JSON.stringify({ error: 'Ocurrió un error. Por favor intenta de nuevo.' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
