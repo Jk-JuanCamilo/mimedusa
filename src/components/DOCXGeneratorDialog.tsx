@@ -102,33 +102,111 @@ function BorderPreview({ borderStyle }: { borderStyle: BorderStyleOption }) {
 }
 
 const templateOptions = [
+  // Cartas Empresariales
   { value: "business-letter", label: "Carta Empresarial", description: "Carta formal con membrete profesional" },
+  { value: "cover-letter", label: "Carta de Presentación", description: "Presentación para empleo" },
+  { value: "introduction-letter", label: "Carta de Introducción", description: "Presentación de empresa o servicio" },
+  { value: "invitation-letter", label: "Carta de Invitación", description: "Invitación formal a eventos" },
+  { value: "thank-you-letter", label: "Carta de Agradecimiento", description: "Agradecimiento profesional" },
+  { value: "apology-letter", label: "Carta de Disculpa", description: "Disculpa profesional" },
+  { value: "follow-up-letter", label: "Carta de Seguimiento", description: "Seguimiento a reuniones o propuestas" },
+  { value: "confirmation-letter", label: "Carta de Confirmación", description: "Confirmación de acuerdos o citas" },
+  
+  // Documentos Laborales
   { value: "resume", label: "Hoja de Vida", description: "CV profesional y moderno" },
+  { value: "functional-resume", label: "CV Funcional", description: "CV enfocado en habilidades" },
+  { value: "academic-cv", label: "CV Académico", description: "CV para entorno universitario" },
+  { value: "recommendation-letter", label: "Carta de Recomendación", description: "Recomendación laboral o académica" },
+  { value: "reference-letter", label: "Carta de Referencia", description: "Referencia de buena conducta" },
+  { value: "work-certificate", label: "Constancia Laboral", description: "Certificación de trabajo" },
+  { value: "salary-certificate", label: "Certificado de Ingresos", description: "Constancia de salario" },
+  { value: "experience-certificate", label: "Certificado de Experiencia", description: "Constancia de experiencia laboral" },
+  { value: "resignation-letter", label: "Carta de Renuncia", description: "Renuncia profesional" },
+  { value: "termination-letter", label: "Carta de Terminación", description: "Terminación de contrato" },
+  { value: "promotion-letter", label: "Carta de Promoción", description: "Notificación de ascenso" },
+  { value: "warning-letter", label: "Carta de Amonestación", description: "Llamado de atención formal" },
+  { value: "job-offer", label: "Oferta de Empleo", description: "Carta de oferta laboral" },
+  
+  // Contratos
   { value: "contract", label: "Contrato General", description: "Contrato legal con cláusulas" },
   { value: "rental-contract", label: "Contrato de Arrendamiento", description: "Arriendo de vivienda o local" },
   { value: "work-contract", label: "Contrato de Trabajo", description: "Contrato laboral completo" },
   { value: "service-contract", label: "Contrato de Servicios", description: "Prestación de servicios profesionales" },
   { value: "sales-contract", label: "Contrato de Compraventa", description: "Compra y venta de bienes" },
-  { value: "recommendation-letter", label: "Carta de Recomendación", description: "Recomendación laboral o académica" },
-  { value: "reference-letter", label: "Carta de Referencia Personal", description: "Referencia de buena conducta" },
-  { value: "work-certificate", label: "Constancia Laboral", description: "Certificación de trabajo" },
-  { value: "resignation-letter", label: "Carta de Renuncia", description: "Renuncia profesional" },
-  { value: "termination-letter", label: "Carta de Terminación", description: "Terminación de contrato" },
+  { value: "loan-contract", label: "Contrato de Préstamo", description: "Préstamo de dinero" },
+  { value: "partnership-contract", label: "Contrato de Sociedad", description: "Constitución de sociedad" },
+  { value: "franchise-contract", label: "Contrato de Franquicia", description: "Acuerdo de franquicia" },
+  { value: "maintenance-contract", label: "Contrato de Mantenimiento", description: "Servicios de mantenimiento" },
+  { value: "consulting-contract", label: "Contrato de Consultoría", description: "Servicios de consultoría" },
+  { value: "freelance-contract", label: "Contrato Freelance", description: "Trabajo independiente" },
+  { value: "internship-contract", label: "Contrato de Pasantía", description: "Prácticas profesionales" },
+  { value: "confidentiality-contract", label: "Contrato de Confidencialidad", description: "NDA completo" },
+  
+  // Documentos Comerciales
   { value: "invoice", label: "Factura", description: "Factura comercial detallada" },
   { value: "quote", label: "Cotización", description: "Cotización de productos/servicios" },
   { value: "receipt", label: "Recibo de Pago", description: "Comprobante de pago" },
   { value: "proposal", label: "Propuesta Comercial", description: "Propuesta de negocios persuasiva" },
+  { value: "purchase-order", label: "Orden de Compra", description: "Pedido a proveedores" },
+  { value: "delivery-receipt", label: "Acta de Entrega", description: "Recepción de productos/servicios" },
+  { value: "credit-note", label: "Nota de Crédito", description: "Ajuste de facturación" },
+  { value: "sponsorship-proposal", label: "Propuesta de Patrocinio", description: "Solicitud de patrocinio" },
+  
+  // Informes y Actas
   { value: "report", label: "Informe Ejecutivo", description: "Informe con análisis" },
+  { value: "technical-report", label: "Informe Técnico", description: "Reporte técnico detallado" },
+  { value: "audit-report", label: "Informe de Auditoría", description: "Resultados de auditoría" },
+  { value: "progress-report", label: "Informe de Avance", description: "Progreso de proyecto" },
+  { value: "incident-report", label: "Informe de Incidente", description: "Reporte de incidentes" },
   { value: "meeting-minutes", label: "Acta de Reunión", description: "Acta formal de reuniones" },
+  { value: "board-minutes", label: "Acta de Junta Directiva", description: "Acta de junta directiva" },
+  { value: "shareholders-minutes", label: "Acta de Asamblea", description: "Acta de asamblea de socios" },
+  
+  // Comunicaciones Internas
   { value: "memo", label: "Memorando", description: "Comunicación interna" },
-  { value: "certificate", label: "Certificado", description: "Certificado formal y elegante" },
+  { value: "circular", label: "Circular", description: "Comunicado general" },
+  { value: "notice", label: "Aviso", description: "Notificación interna" },
+  { value: "policy-document", label: "Política Empresarial", description: "Documento de políticas" },
+  { value: "procedure-document", label: "Procedimiento", description: "Manual de procedimientos" },
+  { value: "manual", label: "Manual", description: "Manual de usuario o empleado" },
+  
+  // Documentos Legales
   { value: "agreement", label: "Acuerdo de Confidencialidad", description: "NDA profesional" },
   { value: "power-of-attorney", label: "Poder Notarial", description: "Poder legal con facultades" },
   { value: "authorization", label: "Autorización", description: "Autorización para trámites" },
   { value: "promissory-note", label: "Pagaré", description: "Documento de deuda" },
+  { value: "affidavit", label: "Declaración Jurada", description: "Declaración bajo juramento" },
+  { value: "waiver", label: "Exoneración", description: "Liberación de responsabilidad" },
+  { value: "consent-form", label: "Consentimiento Informado", description: "Autorización con información" },
+  { value: "will-testament", label: "Testamento", description: "Última voluntad" },
+  
+  // Peticiones y Quejas
   { value: "petition", label: "Derecho de Petición", description: "Petición legal formal" },
   { value: "complaint", label: "Queja o Reclamo", description: "Queja formal ante entidad" },
-  { value: "apology-letter", label: "Carta de Disculpa", description: "Disculpa profesional" },
+  { value: "appeal", label: "Recurso de Apelación", description: "Apelación de decisiones" },
+  { value: "tutela", label: "Acción de Tutela", description: "Protección de derechos fundamentales" },
+  { value: "pqr", label: "PQR", description: "Petición, Queja o Reclamo" },
+  
+  // Certificados
+  { value: "certificate", label: "Certificado General", description: "Certificado formal y elegante" },
+  { value: "achievement-certificate", label: "Certificado de Logro", description: "Reconocimiento de logros" },
+  { value: "completion-certificate", label: "Certificado de Finalización", description: "Curso o programa completado" },
+  { value: "participation-certificate", label: "Certificado de Participación", description: "Asistencia a eventos" },
+  { value: "training-certificate", label: "Certificado de Capacitación", description: "Formación completada" },
+  { value: "diploma", label: "Diploma", description: "Diploma académico" },
+  
+  // Documentos Académicos
+  { value: "thesis-cover", label: "Portada de Tesis", description: "Portada formal para tesis" },
+  { value: "abstract", label: "Resumen Ejecutivo", description: "Abstract o resumen" },
+  { value: "research-proposal", label: "Propuesta de Investigación", description: "Proyecto de investigación" },
+  { value: "academic-letter", label: "Carta Académica", description: "Comunicación universitaria" },
+  { value: "recommendation-academic", label: "Recomendación Académica", description: "Para estudios o becas" },
+  
+  // Documentos Personales
+  { value: "travel-authorization", label: "Permiso de Viaje", description: "Autorización de viaje para menores" },
+  { value: "medical-excuse", label: "Excusa Médica", description: "Justificación por salud" },
+  { value: "personal-reference", label: "Referencia Personal", description: "Carta de recomendación personal" },
+  { value: "character-reference", label: "Referencia de Carácter", description: "Testimonio de conducta" },
 ];
 
 export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated }: DOCXGeneratorDialogProps) {

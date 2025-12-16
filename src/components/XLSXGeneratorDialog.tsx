@@ -41,16 +41,85 @@ interface PreviewData {
 }
 
 const templateOptions = [
-  { value: "data-analysis", label: "📊 Análisis de Datos", description: "Plantilla para análisis estadístico con fórmulas" },
+  // Análisis y Datos
+  { value: "data-analysis", label: "📊 Análisis de Datos", description: "Análisis estadístico con fórmulas avanzadas" },
+  { value: "dashboard", label: "📈 Dashboard", description: "Panel de control visual con métricas" },
+  { value: "pivot-data", label: "🔄 Datos para Pivot", description: "Datos estructurados para tablas dinámicas" },
+  { value: "survey-results", label: "📝 Resultados Encuesta", description: "Análisis de encuestas y formularios" },
+  { value: "statistical-report", label: "📉 Informe Estadístico", description: "Reportes con análisis estadísticos" },
+  
+  // Finanzas y Contabilidad
   { value: "finance", label: "💰 Finanzas", description: "Control de gastos, ingresos y balance" },
-  { value: "sales", label: "📈 Ventas", description: "Seguimiento de ventas y comisiones" },
-  { value: "inventory", label: "📦 Inventario", description: "Control de stock y productos" },
   { value: "budget", label: "💵 Presupuesto", description: "Planificación y control presupuestario" },
-  { value: "report", label: "📋 Informe", description: "Reportes con tablas y resúmenes" },
-  { value: "project", label: "📅 Gestión de Proyecto", description: "Cronograma y seguimiento de tareas" },
+  { value: "cash-flow", label: "💳 Flujo de Caja", description: "Proyección de entradas y salidas" },
+  { value: "balance-sheet", label: "📊 Balance General", description: "Estado de situación financiera" },
+  { value: "income-statement", label: "📈 Estado de Resultados", description: "Pérdidas y ganancias" },
+  { value: "expense-report", label: "🧾 Reporte de Gastos", description: "Control detallado de gastos" },
+  { value: "accounts-receivable", label: "📥 Cuentas por Cobrar", description: "Seguimiento de deudores" },
+  { value: "accounts-payable", label: "📤 Cuentas por Pagar", description: "Control de obligaciones" },
+  { value: "loan-amortization", label: "🏦 Amortización Préstamo", description: "Tabla de amortización de créditos" },
+  { value: "tax-calculator", label: "🧮 Calculadora Impuestos", description: "Cálculo de impuestos y retenciones" },
+  
+  // Ventas y Marketing
+  { value: "sales", label: "📈 Ventas", description: "Seguimiento de ventas y comisiones" },
+  { value: "sales-forecast", label: "🔮 Pronóstico Ventas", description: "Proyección de ventas futuras" },
+  { value: "client-database", label: "👥 Base de Clientes", description: "CRM básico con datos de clientes" },
+  { value: "leads-tracker", label: "🎯 Seguimiento Leads", description: "Control de prospectos y oportunidades" },
+  { value: "commission-calculator", label: "💵 Cálculo Comisiones", description: "Comisiones por vendedor" },
+  { value: "marketing-campaign", label: "📣 Campaña Marketing", description: "Seguimiento de campañas publicitarias" },
+  { value: "competitor-analysis", label: "🔍 Análisis Competencia", description: "Comparativa con competidores" },
+  { value: "price-list", label: "💲 Lista de Precios", description: "Catálogo de productos con precios" },
+  
+  // Inventario y Logística
+  { value: "inventory", label: "📦 Inventario", description: "Control de stock y productos" },
+  { value: "warehouse-management", label: "🏭 Gestión Almacén", description: "Control de entradas y salidas" },
+  { value: "stock-valuation", label: "💎 Valoración Stock", description: "Valoración de inventario" },
+  { value: "purchase-orders", label: "🛒 Órdenes de Compra", description: "Seguimiento de pedidos a proveedores" },
+  { value: "supplier-database", label: "🏪 Base Proveedores", description: "Directorio de proveedores" },
+  { value: "shipping-tracker", label: "🚚 Seguimiento Envíos", description: "Control de entregas y logística" },
+  
+  // Recursos Humanos
   { value: "payroll", label: "👥 Nómina", description: "Cálculo de salarios y deducciones" },
-  { value: "invoice-tracker", label: "🧾 Facturas", description: "Registro y seguimiento de facturas" },
+  { value: "employee-database", label: "👤 Base Empleados", description: "Directorio de personal" },
+  { value: "attendance-tracker", label: "⏰ Control Asistencia", description: "Registro de horas trabajadas" },
+  { value: "vacation-tracker", label: "🏖️ Control Vacaciones", description: "Seguimiento de días libres" },
+  { value: "performance-review", label: "📋 Evaluación Desempeño", description: "Evaluaciones de personal" },
+  { value: "recruitment-tracker", label: "🎯 Seguimiento Reclutamiento", description: "Control de procesos de selección" },
+  { value: "training-matrix", label: "📚 Matriz Capacitación", description: "Plan de formación y cursos" },
+  { value: "overtime-calculator", label: "⏱️ Cálculo Horas Extra", description: "Control de tiempo extra" },
+  
+  // Gestión de Proyectos
+  { value: "project", label: "📅 Gestión de Proyecto", description: "Cronograma y seguimiento de tareas" },
+  { value: "gantt-chart", label: "📊 Diagrama Gantt", description: "Línea de tiempo del proyecto" },
+  { value: "task-tracker", label: "✅ Seguimiento Tareas", description: "Lista de tareas con estados" },
+  { value: "resource-allocation", label: "👥 Asignación Recursos", description: "Distribución de personal y recursos" },
+  { value: "project-budget", label: "💰 Presupuesto Proyecto", description: "Control de costos del proyecto" },
+  { value: "risk-register", label: "⚠️ Registro de Riesgos", description: "Identificación y mitigación de riesgos" },
+  { value: "milestone-tracker", label: "🏁 Seguimiento Hitos", description: "Control de entregables clave" },
+  
+  // Facturación y Documentos
+  { value: "invoice-tracker", label: "🧾 Control Facturas", description: "Registro y seguimiento de facturas" },
+  { value: "invoice-template", label: "📄 Plantilla Factura", description: "Factura comercial con cálculos" },
+  { value: "quote-template", label: "💼 Plantilla Cotización", description: "Presupuesto para clientes" },
+  { value: "expense-claim", label: "🧾 Reembolso Gastos", description: "Solicitud de reembolso" },
+  
+  // KPIs y Métricas
   { value: "kpi", label: "🎯 KPIs", description: "Indicadores clave de rendimiento" },
+  { value: "scorecard", label: "📊 Balanced Scorecard", description: "Cuadro de mando integral" },
+  { value: "okr-tracker", label: "🎯 Seguimiento OKRs", description: "Objetivos y resultados clave" },
+  { value: "metrics-dashboard", label: "📈 Panel de Métricas", description: "Indicadores consolidados" },
+  
+  // Reportes
+  { value: "report", label: "📋 Informe General", description: "Reportes con tablas y resúmenes" },
+  { value: "weekly-report", label: "📅 Informe Semanal", description: "Reporte de actividades semanales" },
+  { value: "monthly-report", label: "📆 Informe Mensual", description: "Resumen mensual de operaciones" },
+  { value: "annual-report", label: "📊 Informe Anual", description: "Reporte anual consolidado" },
+  
+  // Otros
+  { value: "calendar", label: "📅 Calendario", description: "Calendario con eventos y fechas" },
+  { value: "checklist", label: "✅ Lista de Verificación", description: "Checklist con estados" },
+  { value: "contact-list", label: "📇 Directorio Contactos", description: "Lista de contactos organizada" },
+  { value: "event-planner", label: "🎉 Planificador Eventos", description: "Organización de eventos" },
   { value: "macros", label: "⚙️ Macros VBA", description: "Plantilla con macros automatizadas" },
   { value: "custom", label: "✨ Personalizado", description: "Crea tu propia estructura" },
 ];
