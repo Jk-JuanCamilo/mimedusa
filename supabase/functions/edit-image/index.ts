@@ -15,27 +15,28 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { prompt, imageData, userId } = body;
+    const { prompt, imageData, userId, mode = "edit" } = body;
 
-    console.log("edit-image: Request received, userId:", userId || "anonymous");
+    console.log("edit-image: Request received, mode:", mode, "userId:", userId || "anonymous");
 
-    // Validate inputs
+    // Validate prompt
     if (!prompt || typeof prompt !== "string") {
-      return new Response(JSON.stringify({ error: "Se requiere una instrucción de edición" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!imageData || typeof imageData !== "string") {
-      return new Response(JSON.stringify({ error: "Se requiere una imagen" }), {
+      return new Response(JSON.stringify({ error: "Se requiere una descripción o instrucción" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (prompt.length > MAX_PROMPT_LENGTH) {
-      return new Response(JSON.stringify({ error: `La instrucción es muy larga. Máximo ${MAX_PROMPT_LENGTH} caracteres.` }), {
+      return new Response(JSON.stringify({ error: `La descripción es muy larga. Máximo ${MAX_PROMPT_LENGTH} caracteres.` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // For edit mode, require imageData
+    if (mode === "edit" && (!imageData || typeof imageData !== "string")) {
+      return new Response(JSON.stringify({ error: "Se requiere una imagen para editar" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -60,7 +61,7 @@ serve(async (req) => {
       if (canEdit === false) {
         console.log("Rate limit exceeded for userId:", userId);
         return new Response(JSON.stringify({ 
-          error: "Has alcanzado el límite de 3 ediciones por hora. Por favor espera antes de intentar de nuevo." 
+          error: "Has alcanzado el límite de 4 usos cada 3 horas. Por favor espera antes de intentar de nuevo." 
         }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -78,7 +79,34 @@ serve(async (req) => {
       });
     }
 
-    console.log("edit-image: Calling AI API with prompt:", prompt.substring(0, 50) + "...");
+    console.log("edit-image: Calling AI API with mode:", mode, "prompt:", prompt.substring(0, 50) + "...");
+
+    // Build message content based on mode
+    let messageContent;
+    
+    if (mode === "generate") {
+      // Image generation mode - text only
+      messageContent = [
+        {
+          type: "text",
+          text: `Genera una imagen de alta calidad basada en esta descripción: ${prompt}`
+        }
+      ];
+    } else {
+      // Image editing mode - text + image
+      messageContent = [
+        {
+          type: "text",
+          text: prompt
+        },
+        {
+          type: "image_url",
+          image_url: {
+            url: imageData
+          }
+        }
+      ];
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -91,18 +119,7 @@ serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: [
-              {
-                type: "text",
-                text: prompt
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: imageData
-                }
-              }
-            ]
+            content: messageContent
           }
         ],
         modalities: ["image", "text"]
@@ -126,7 +143,7 @@ serve(async (req) => {
         });
       }
       
-      return new Response(JSON.stringify({ error: "Error al editar la imagen. Por favor intenta de nuevo." }), {
+      return new Response(JSON.stringify({ error: "Error al procesar la imagen. Por favor intenta de nuevo." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -135,13 +152,13 @@ serve(async (req) => {
     const data = await response.json();
     console.log("edit-image: AI response received");
     
-    const editedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    const textContent = data.choices?.[0]?.message?.content || "¡Imagen editada!";
+    const resultImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    const textContent = data.choices?.[0]?.message?.content || (mode === "generate" ? "¡Imagen creada!" : "¡Imagen editada!");
 
-    if (!editedImageUrl) {
-      console.log("No edited image returned, text response:", textContent);
+    if (!resultImageUrl) {
+      console.log("No image returned, text response:", textContent);
       return new Response(JSON.stringify({ 
-        text: textContent || "No se pudo editar la imagen. Por favor intenta con instrucciones más específicas."
+        text: textContent || "No se pudo procesar la solicitud. Por favor intenta con una descripción más específica."
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -156,16 +173,16 @@ serve(async (req) => {
       console.error("Failed to record usage:", insertError);
     }
 
-    console.log("edit-image: Success, image edited");
+    console.log("edit-image: Success, image", mode === "generate" ? "generated" : "edited");
 
     return new Response(JSON.stringify({ 
-      imageUrl: editedImageUrl,
+      imageUrl: resultImageUrl,
       text: textContent
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("Image edit error:", e);
+    console.error("Image processing error:", e);
     return new Response(JSON.stringify({ error: "Ocurrió un error inesperado. Por favor intenta de nuevo." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
