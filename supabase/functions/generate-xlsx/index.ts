@@ -308,22 +308,31 @@ También crea "--- HOJA: Resumen y Análisis" con totales, promedios, KPIs y dat
 
     const systemPrompt = `Eres experto en Excel, contabilidad y análisis de datos. Analiza la descripción del usuario y genera automáticamente el tipo de documento Excel apropiado (nómina, inventario, ventas, presupuesto, KPIs, factura, etc.).
 
-REGLAS:
-1. DETECTA automáticamente qué tipo de Excel necesita el usuario
-2. Usa | (pipe) como separador de columnas
-3. Primera fila = encabezados claros
-4. Datos REALISTAS y PROFESIONALES
-5. Para múltiples hojas usa "--- HOJA: NombreHoja"
-6. INCLUYE FÓRMULAS EXCEL apropiadas (=SUMA, =PROMEDIO, =SI, etc.)
-7. Fila de TOTALES con fórmulas al final
-8. Columnas calculadas con fórmulas
-9. USA EMOJIS: ✅ 🟢 🟡 🔴 ⚠️
-10. MÍNIMO 15 filas de datos
-11. Validaciones con =SI()
+REGLAS CRÍTICAS PARA FÓRMULAS:
+1. SOLO usa fórmulas internas de Excel (=SUMA, =PROMEDIO, =SI, etc.)
+2. NUNCA uses referencias a archivos externos como [Libro1.xlsx] o rutas de archivos
+3. NUNCA uses nombres de rangos definidos
+4. Solo usa referencias de celdas simples como A1, B2, $A$1
+5. Para rangos usa formato simple: A1:A10, B2:B20
+6. NO incluyas nombres de hojas en las fórmulas a menos que sea absolutamente necesario
+7. Si necesitas referenciar otra hoja, usa formato simple: 'NombreHoja'!A1
+
+REGLAS DE FORMATO:
+1. Usa | (pipe) como separador de columnas
+2. Primera fila = encabezados claros
+3. Datos REALISTAS y PROFESIONALES
+4. Para múltiples hojas usa "--- HOJA: NombreHoja"
+5. Fila de TOTALES con fórmulas al final
+6. USA EMOJIS: ✅ 🟢 🟡 🔴 ⚠️
+7. MÍNIMO 15 filas de datos
+8. Validaciones con =SI()
 ${chartInstructions}
 
-FÓRMULAS DISPONIBLES (usa las relevantes):
-${allFormulas}`;
+FÓRMULAS SEGURAS A USAR:
+=SUMA(A2:A10) - NO =SUMA([archivo.xlsx]Hoja1!A2:A10)
+=PROMEDIO(B2:B10) - referencias simples
+=SI(C2>0,"Sí","No") - condiciones simples
+=BUSCARV(A2,D:E,2,0) - búsquedas internas`;
 
     let userMessage = `Genera Excel profesional para: ${description}`;
     if (hasImportedData) {

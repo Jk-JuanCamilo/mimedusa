@@ -273,7 +273,19 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
     
     // Preserve Excel formulas (starts with =)
     if (trimmed.startsWith('=')) {
-      return { f: trimmed.substring(1) }; // xlsx-js-style formula format
+      let formula = trimmed.substring(1);
+      
+      // Clean formula to remove any external references that cause security warnings
+      // Remove any file path references like [Book1.xlsx] or C:\path\
+      formula = formula.replace(/\[[^\]]+\]/g, ''); // Remove [filename.xlsx] references
+      formula = formula.replace(/[A-Za-z]:\\[^!]+!/g, ''); // Remove file paths like C:\path\file.xlsx!
+      formula = formula.replace(/'[^']+'\!/g, ''); // Remove sheet references with quotes that might look external
+      
+      // Only keep the formula if it's valid after cleaning
+      if (formula.trim()) {
+        return { f: formula };
+      }
+      return trimmed; // Return as text if formula became invalid
     }
     
     // Try to convert numeric values (but not formulas)
@@ -456,8 +468,25 @@ export function XLSXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   const handleDownload = async () => {
     if (!preview) return;
 
-    // Write workbook to file
-    XLSX.writeFile(preview.workbook, preview.filename);
+    // Clean workbook to remove external links that cause security warnings
+    const cleanWorkbook = { ...preview.workbook };
+    
+    // Remove any external links or defined names that reference external sources
+    if (cleanWorkbook.Workbook) {
+      delete cleanWorkbook.Workbook.Names; // Remove defined names that might contain external refs
+    }
+    
+    // Remove linkage properties using type assertion
+    const wb = cleanWorkbook as Record<string, unknown>;
+    delete wb.ExternalLinks;
+    delete wb.Links;
+    delete wb.Custprops;
+    
+    // Write workbook to file with options to prevent external link warnings
+    XLSX.writeFile(cleanWorkbook, preview.filename, {
+      bookSST: false, // Don't use shared string table (can cause issues)
+      bookType: 'xlsx'
+    });
 
     // Save to conversation history if enabled
     if (saveToHistory && onSaveToHistory && isAuthenticated) {
