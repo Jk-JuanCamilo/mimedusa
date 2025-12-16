@@ -478,10 +478,10 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   };
 
   const handleGenerate = async () => {
-    if (!templateType || !description.trim()) {
+    if (!description.trim()) {
       toast({
-        title: "Campos requeridos",
-        description: "Selecciona una plantilla y describe tu documento.",
+        title: "Campo requerido",
+        description: "Describe qué documento necesitas.",
         variant: "destructive",
       });
       return;
@@ -491,7 +491,7 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-docx', {
-        body: { templateType, description, customTitle }
+        body: { description, customTitle }
       });
 
       if (error) throw error;
@@ -604,30 +604,11 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
         {!preview ? (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Tipo de Documento</Label>
-              <Select value={templateType} onValueChange={setTemplateType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una plantilla" />
-                </SelectTrigger>
-                <SelectContent>
-                  {templateOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{option.label}</span>
-                        <span className="text-xs text-muted-foreground">{option.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <Label>Descripción del Documento</Label>
               <SpeechTextarea
                 value={description}
                 onChange={setDescription}
-                placeholder="Describe qué necesitas en tu documento. Ejemplo: Carta de renuncia para empresa de tecnología, con tono profesional y agradecimiento por los años trabajados..."
+                placeholder="Describe el documento que necesitas. Ej: 'Carta de renuncia profesional', 'Contrato de arrendamiento para apartamento', 'Certificado de trabajo para empleado'..."
                 className="min-h-[120px]"
               />
             </div>

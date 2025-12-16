@@ -285,14 +285,12 @@ serve(async (req) => {
     void supabase.rpc('record_api_request', { p_ip_address: clientIp, p_endpoint: 'generate-xlsx' });
     
     const body = await req.json();
-    const { templateType, description, customTitle, importedData, includeCharts } = body;
+    const { description, customTitle, importedData, includeCharts } = body;
 
-    if (!templateType || !description) {
-      return new Response(JSON.stringify({ error: "Se requiere tipo de plantilla y descripción" }),
+    if (!description) {
+      return new Response(JSON.stringify({ error: "Se requiere descripción del archivo Excel" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-
-    const templateConfig = getXlsxSystemPrompt(templateType);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -302,39 +300,37 @@ serve(async (req) => {
 
     const hasImportedData = importedData && importedData.trim().length > 0;
     
-    const relevantFormulas = templateConfig.formulas
-      .map((cat: string) => formulaCategories[cat as keyof typeof formulaCategories])
-      .filter(Boolean)
-      .join('\n\n');
+    // Incluir todas las fórmulas disponibles para detección automática
+    const allFormulas = Object.values(formulaCategories).join('\n\n');
 
     const chartInstructions = includeCharts ? `
 También crea "--- HOJA: Resumen y Análisis" con totales, promedios, KPIs y datos para gráficos.` : '';
 
-    const systemPrompt = `Eres experto en Excel, contabilidad y análisis de datos. ${templateConfig.prompt}
+    const systemPrompt = `Eres experto en Excel, contabilidad y análisis de datos. Analiza la descripción del usuario y genera automáticamente el tipo de documento Excel apropiado (nómina, inventario, ventas, presupuesto, KPIs, factura, etc.).
 
 REGLAS:
-1. Usa | (pipe) como separador de columnas
-2. Primera fila = encabezados claros
-3. Datos REALISTAS y PROFESIONALES
-4. Para múltiples hojas usa "--- HOJA: NombreHoja"
-5. INCLUYE FÓRMULAS EXCEL (=SUMA, =PROMEDIO, =SI, etc.)
-6. Fila de TOTALES con fórmulas al final
-7. Columnas calculadas con fórmulas
-8. USA EMOJIS: ✅ 🟢 🟡 🔴 ⚠️
-9. MÍNIMO 15 filas de datos
-10. Validaciones con =SI()
+1. DETECTA automáticamente qué tipo de Excel necesita el usuario
+2. Usa | (pipe) como separador de columnas
+3. Primera fila = encabezados claros
+4. Datos REALISTAS y PROFESIONALES
+5. Para múltiples hojas usa "--- HOJA: NombreHoja"
+6. INCLUYE FÓRMULAS EXCEL apropiadas (=SUMA, =PROMEDIO, =SI, etc.)
+7. Fila de TOTALES con fórmulas al final
+8. Columnas calculadas con fórmulas
+9. USA EMOJIS: ✅ 🟢 🟡 🔴 ⚠️
+10. MÍNIMO 15 filas de datos
+11. Validaciones con =SI()
 ${chartInstructions}
 
-${relevantFormulas}
-
-FÓRMULAS A USAR: =SUMA, =PROMEDIO, =MAX, =MIN, =SI, =BUSCARV, =SUMAR.SI, =CONTAR.SI, =HOY()`;
+FÓRMULAS DISPONIBLES (usa las relevantes):
+${allFormulas}`;
 
     let userMessage = `Genera Excel profesional para: ${description}`;
     if (hasImportedData) {
       userMessage += `\n\nDATOS IMPORTADOS:\n${importedData.substring(0, 8000)}`;
     }
 
-    console.log("generate-xlsx: Calling AI for", templateType);
+    console.log("generate-xlsx: Calling AI with auto-detection for:", description.substring(0, 100));
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -368,8 +364,11 @@ FÓRMULAS A USAR: =SUMA, =PROMEDIO, =MAX, =MIN, =SI, =BUSCARV, =SUMAR.SI, =CONTA
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // Extract title from first line or use custom title
+    const extractedTitle = content.split('\n')[0]?.replace(/^[\-#\s|]+/, '').replace(/\|.*/,'').trim() || "Documento Excel";
+
     return new Response(JSON.stringify({
-      content, title: customTitle || templateConfig.title, templateType
+      content, title: customTitle || extractedTitle
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
