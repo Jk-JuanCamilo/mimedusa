@@ -10,8 +10,40 @@ export interface Message {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
+const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/firecrawl-search`;
+const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/firecrawl-scrape`;
 
 const USER_NAME_KEY = "medussa_user_name";
+
+// Detecta si el usuario quiere buscar en internet
+function detectWebSearch(message: string): { type: 'search' | 'scrape' | null; query: string } {
+  const searchPatterns = [
+    /(?:busca|buscar|búscame|investiga|investigar|qué hay sobre|qué dice internet|información sobre|noticias de|noticias sobre|actualidad de|últimas noticias)\s+(.+)/i,
+    /(?:search|look up|find info|what's new about)\s+(.+)/i,
+  ];
+  
+  const urlPatterns = [
+    /(?:analiza|analizar|resume|resumir|lee|leer|extrae|extraer|qué dice|contenido de)\s+(https?:\/\/[^\s]+)/i,
+    /(?:analyze|summarize|read|extract from)\s+(https?:\/\/[^\s]+)/i,
+    /(https?:\/\/[^\s]+)/i, // URL directa
+  ];
+  
+  for (const pattern of searchPatterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      return { type: 'search', query: match[1].trim() };
+    }
+  }
+  
+  for (const pattern of urlPatterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      return { type: 'scrape', query: match[1].trim() };
+    }
+  }
+  
+  return { type: null, query: '' };
+}
 
 // Detecta el nombre del usuario en el mensaje
 function extractUserName(message: string): string | null {
@@ -129,6 +161,64 @@ export function useChat(options?: UseChatOptions) {
       }
     }
 
+    // Detectar si el usuario quiere buscar en internet o analizar una URL
+    const webAction = detectWebSearch(input);
+    let webContext = "";
+    
+    if (webAction.type === 'search') {
+      try {
+        setMessages(prev => [...prev, { role: "assistant", content: "🔍 Buscando en internet..." }]);
+        
+        const searchResp = await fetch(SEARCH_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: webAction.query }),
+        });
+        
+        if (searchResp.ok) {
+          const searchData = await searchResp.json();
+          if (searchData.data && searchData.data.length > 0) {
+            webContext = "\n\n📊 INFORMACIÓN DE INTERNET (actualizada):\n";
+            searchData.data.slice(0, 3).forEach((result: any, i: number) => {
+              webContext += `\n${i + 1}. **${result.title || 'Sin título'}**\n`;
+              webContext += `   ${result.url}\n`;
+              if (result.markdown) {
+                webContext += `   ${result.markdown.slice(0, 500)}...\n`;
+              }
+            });
+          }
+        }
+        // Quitar mensaje temporal
+        setMessages(prev => prev.slice(0, -1));
+      } catch (e) {
+        console.error("Search error:", e);
+        setMessages(prev => prev.slice(0, -1));
+      }
+    } else if (webAction.type === 'scrape') {
+      try {
+        setMessages(prev => [...prev, { role: "assistant", content: "📄 Analizando página web..." }]);
+        
+        const scrapeResp = await fetch(SCRAPE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: webAction.query }),
+        });
+        
+        if (scrapeResp.ok) {
+          const scrapeData = await scrapeResp.json();
+          const content = scrapeData.data?.markdown || scrapeData.data?.summary;
+          if (content) {
+            webContext = `\n\n📄 CONTENIDO DE ${webAction.query}:\n${content.slice(0, 2000)}`;
+          }
+        }
+        // Quitar mensaje temporal
+        setMessages(prev => prev.slice(0, -1));
+      } catch (e) {
+        console.error("Scrape error:", e);
+        setMessages(prev => prev.slice(0, -1));
+      }
+    }
+
     let assistantContent = "";
 
     const updateAssistant = (chunk: string) => {
@@ -146,8 +236,10 @@ export function useChat(options?: UseChatOptions) {
 
     try {
       // Chat es público - no requiere autenticación
+      // Agregar contexto web si existe
+      const userContent = webContext ? `${input}\n${webContext}` : input;
       // Preparar mensajes con imágenes si las hay
-      const messagesForApi = [...messages, userMsg].map(msg => {
+      const messagesForApi = [...messages, { ...userMsg, content: userContent }].map(msg => {
         if (msg.imageUrl) {
           return {
             role: msg.role,
