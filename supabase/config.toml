@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.edit-image]
 verify_jwt = true
+
+[functions.firecrawl-search]
+verify_jwt = false
+
+[functions.firecrawl-scrape]
+verify_jwt = false
