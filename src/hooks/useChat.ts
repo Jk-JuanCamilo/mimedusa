@@ -161,6 +161,15 @@ export function useChat(options?: UseChatOptions) {
       }
     }
 
+    // Verificar autenticación para el chat
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      toast.error("Debes iniciar sesión para usar el chat");
+      setMessages(prev => prev.slice(0, -1));
+      setIsLoading(false);
+      return;
+    }
+
     // Detectar si el usuario quiere buscar en internet o analizar una URL
     const webAction = detectWebSearch(input);
     let webContext = "";
@@ -171,7 +180,10 @@ export function useChat(options?: UseChatOptions) {
         
         const searchResp = await fetch(SEARCH_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({ query: webAction.query }),
         });
         
@@ -200,7 +212,10 @@ export function useChat(options?: UseChatOptions) {
         
         const scrapeResp = await fetch(SCRAPE_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({ url: webAction.query }),
         });
         
@@ -235,7 +250,6 @@ export function useChat(options?: UseChatOptions) {
     };
 
     try {
-      // Chat es público - no requiere autenticación
       // Agregar contexto web si existe
       const userContent = webContext ? `${input}\n${webContext}` : input;
       // Preparar mensajes con imágenes si las hay
@@ -256,8 +270,9 @@ export function useChat(options?: UseChatOptions) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           messages: messagesForApi,
           model: model || selectedModel,
           userName: userName,
@@ -268,7 +283,9 @@ export function useChat(options?: UseChatOptions) {
       if (!resp.ok) {
         const errorData = await resp.json().catch(() => ({}));
         
-        if (resp.status === 429) {
+        if (resp.status === 401) {
+          toast.error("Sesión expirada. Por favor inicia sesión de nuevo.");
+        } else if (resp.status === 429) {
           toast.error("Límite de solicitudes excedido. Intenta de nuevo más tarde.");
         } else if (resp.status === 402) {
           toast.error("Se requieren créditos adicionales.");
