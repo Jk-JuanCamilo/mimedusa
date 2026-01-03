@@ -21,7 +21,7 @@ export function ChatMessage({ role, content, imageUrl, isStreaming = false }: Ch
   // Typing effect for assistant messages during streaming
   const { displayedText, isTyping } = useTypingEffect({
     text: content,
-    speed: 35, // milliseconds per character - más lento para ver cada letra
+    speed: 60, // milliseconds per character - muy lento para ver cada letra
     enabled: !isUser && isStreaming
   });
 
