@@ -6,6 +6,7 @@ import { useCallback, useMemo } from "react";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import XLSX from "xlsx-js-style";
 import { getRandomTheme, applyThemeToSheet } from "@/utils/excelThemes";
+import { useTypingEffect } from "@/hooks/useTypingEffect";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -16,6 +17,13 @@ interface ChatMessageProps {
 
 export function ChatMessage({ role, content, imageUrl, isStreaming = false }: ChatMessageProps) {
   const isUser = role === "user";
+  
+  // Typing effect for assistant messages during streaming
+  const { displayedText, isTyping } = useTypingEffect({
+    text: content,
+    speed: 8, // milliseconds per character
+    enabled: !isUser && isStreaming
+  });
 
   // Detectar tipo de contenido descargable
   const downloadInfo = useMemo(() => {
@@ -228,8 +236,8 @@ export function ChatMessage({ role, content, imageUrl, isStreaming = false }: Ch
           {isUser ? "Tú" : "Medussa IA"}
         </p>
         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-          {content}
-          {isStreaming && !isUser && (
+          {isUser ? content : (isStreaming ? displayedText : content)}
+          {(isStreaming || isTyping) && !isUser && (
             <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse rounded-sm" />
           )}
         </div>
