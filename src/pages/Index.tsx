@@ -220,7 +220,11 @@ const Index = () => {
           ) : (
             <div className="space-y-4 max-w-3xl mx-auto pb-4">
               {messages.map((message, index) => (
-                <ChatMessage key={index} {...message} />
+                <ChatMessage 
+                  key={index} 
+                  {...message} 
+                  isStreaming={isLoading && index === messages.length - 1 && message.role === "assistant"}
+                />
               ))}
               {isLoading && messages[messages.length - 1]?.role === "user" && (
                 <div className="flex gap-3 p-4 rounded-lg bg-card/60 backdrop-blur-sm mr-8 border border-border/50">

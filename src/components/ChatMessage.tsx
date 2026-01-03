@@ -11,9 +11,10 @@ interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
   imageUrl?: string;
+  isStreaming?: boolean;
 }
 
-export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
+export function ChatMessage({ role, content, imageUrl, isStreaming = false }: ChatMessageProps) {
   const isUser = role === "user";
 
   // Detectar tipo de contenido descargable
@@ -228,6 +229,9 @@ export function ChatMessage({ role, content, imageUrl }: ChatMessageProps) {
         </p>
         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
           {content}
+          {isStreaming && !isUser && (
+            <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse rounded-sm" />
+          )}
         </div>
         {!isUser && (downloadInfo.hasEditableContent || downloadInfo.isWordDocument || downloadInfo.isExcelDocument) && (
           <Button 
