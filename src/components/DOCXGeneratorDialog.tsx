@@ -478,6 +478,15 @@ export function DOCXGeneratorDialog({ disabled, onSaveToHistory, isAuthenticated
   };
 
   const handleGenerate = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Inicio de sesión requerido",
+        description: "Debes iniciar sesión para generar documentos Word.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!description.trim()) {
       toast({
         title: "Campo requerido",
