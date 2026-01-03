@@ -104,6 +104,11 @@ export function ImageEditorDialog({ disabled, isAuthenticated, userId }: ImageEd
   };
 
   const handleProcess = async () => {
+    if (!isAuthenticated) {
+      toast.error("Debes iniciar sesión para generar o editar imágenes");
+      return;
+    }
+
     if (!prompt.trim()) {
       toast.error(mode === "generate" ? "Describe qué imagen quieres crear" : "Escribe qué edición quieres hacer");
       return;

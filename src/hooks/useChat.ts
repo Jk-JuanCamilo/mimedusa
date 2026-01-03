@@ -161,15 +161,6 @@ export function useChat(options?: UseChatOptions) {
       }
     }
 
-    // Verificar autenticación para el chat
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      toast.error("Debes iniciar sesión para usar el chat");
-      setMessages(prev => prev.slice(0, -1));
-      setIsLoading(false);
-      return;
-    }
-
     // Detectar si el usuario quiere buscar en internet o analizar una URL
     const webAction = detectWebSearch(input);
     let webContext = "";
@@ -178,12 +169,16 @@ export function useChat(options?: UseChatOptions) {
       try {
         setMessages(prev => [...prev, { role: "assistant", content: "🔍 Buscando en internet..." }]);
         
+        // Obtener token si existe para búsqueda web
+        const { data: { session: searchSession } } = await supabase.auth.getSession();
+        const searchHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        if (searchSession?.access_token) {
+          searchHeaders.Authorization = `Bearer ${searchSession.access_token}`;
+        }
+
         const searchResp = await fetch(SEARCH_URL, {
           method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          headers: searchHeaders,
           body: JSON.stringify({ query: webAction.query }),
         });
         
@@ -210,12 +205,16 @@ export function useChat(options?: UseChatOptions) {
       try {
         setMessages(prev => [...prev, { role: "assistant", content: "📄 Analizando página web..." }]);
         
+        // Obtener token si existe para scraping
+        const { data: { session: scrapeSession } } = await supabase.auth.getSession();
+        const scrapeHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        if (scrapeSession?.access_token) {
+          scrapeHeaders.Authorization = `Bearer ${scrapeSession.access_token}`;
+        }
+
         const scrapeResp = await fetch(SCRAPE_URL, {
           method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          headers: scrapeHeaders,
           body: JSON.stringify({ url: webAction.query }),
         });
         
@@ -266,12 +265,16 @@ export function useChat(options?: UseChatOptions) {
         return { role: msg.role, content: msg.content };
       });
 
+      // Chat es público - obtener token solo si existe para mejor tracking
+      const { data: { session: chatSession } } = await supabase.auth.getSession();
+      const chatHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (chatSession?.access_token) {
+        chatHeaders.Authorization = `Bearer ${chatSession.access_token}`;
+      }
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: chatHeaders,
         body: JSON.stringify({
           messages: messagesForApi,
           model: model || selectedModel,
