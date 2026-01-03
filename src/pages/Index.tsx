@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { useChat } from "@/hooks/useChat";
 import { useConversations } from "@/hooks/useConversations";
-import { Trash2, History, Plus } from "lucide-react";
+import { Trash2, History, Plus, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Lazy load non-critical visual components
@@ -62,7 +62,8 @@ const Index = () => {
     setSelectedModel,
     setMessages,
     userName,
-    setUserName
+    setUserName,
+    streamingStats
   } = useChat({ onMessageComplete: handleMessageComplete });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -226,6 +227,17 @@ const Index = () => {
                   isStreaming={isLoading && index === messages.length - 1 && message.role === "assistant"}
                 />
               ))}
+              {/* Streaming stats indicator */}
+              {isLoading && streamingStats && (
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-2">
+                  <Zap className="w-3 h-3 text-primary animate-pulse" />
+                  <span>{streamingStats.tokensPerSecond} tokens/s</span>
+                  <span className="text-border">•</span>
+                  <span>{streamingStats.totalTokens} tokens</span>
+                  <span className="text-border">•</span>
+                  <span>{streamingStats.elapsedTime}s</span>
+                </div>
+              )}
               {isLoading && messages[messages.length - 1]?.role === "user" && (
                 <div className="flex gap-3 p-4 rounded-lg bg-card/60 backdrop-blur-sm mr-8 border border-border/50">
                   <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-accent/20 text-accent">

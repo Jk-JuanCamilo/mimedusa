@@ -8,6 +8,12 @@ export interface Message {
   imageUrl?: string;
 }
 
+export interface StreamingStats {
+  tokensPerSecond: number;
+  totalTokens: number;
+  elapsedTime: number;
+}
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/firecrawl-search`;
@@ -69,6 +75,7 @@ interface UseChatOptions {
 export function useChat(options?: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingStats, setStreamingStats] = useState<StreamingStats | null>(null);
   const [selectedModel, setSelectedModel] = useState("google/gemini-2.5-flash-lite");
   const [userName, setUserName] = useState<string | null>(() => {
     return localStorage.getItem(USER_NAME_KEY);
@@ -234,9 +241,26 @@ export function useChat(options?: UseChatOptions) {
     }
 
     let assistantContent = "";
+    let tokenCount = 0;
+    let streamStartTime: number | null = null;
 
     const updateAssistant = (chunk: string) => {
+      if (!streamStartTime) {
+        streamStartTime = Date.now();
+      }
+      
       assistantContent += chunk;
+      tokenCount += chunk.split(/\s+/).filter(Boolean).length; // Approximate token count
+      
+      const elapsedTime = (Date.now() - streamStartTime) / 1000;
+      const tokensPerSecond = elapsedTime > 0 ? Math.round(tokenCount / elapsedTime) : 0;
+      
+      setStreamingStats({
+        tokensPerSecond,
+        totalTokens: tokenCount,
+        elapsedTime: Math.round(elapsedTime * 10) / 10
+      });
+      
       setMessages(prev => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant") {
@@ -363,6 +387,7 @@ export function useChat(options?: UseChatOptions) {
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
+      setStreamingStats(null);
     }
   }, [messages, selectedModel, options, userName]);
 
@@ -379,6 +404,7 @@ export function useChat(options?: UseChatOptions) {
     setSelectedModel,
     setMessages: setMessagesExternal,
     userName,
-    setUserName
+    setUserName,
+    streamingStats
   };
 }
