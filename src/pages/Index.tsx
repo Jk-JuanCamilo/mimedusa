@@ -11,22 +11,15 @@ import { useChat } from "@/hooks/useChat";
 import { useConversations } from "@/hooks/useConversations";
 import { Trash2, History, Plus, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Session } from "@supabase/supabase-js";
-import { useLocation, useNavigate } from "react-router-dom";
-import { setSeo } from "@/lib/seo";
 
 // Lazy load non-critical visual components
 const CircuitBackground = lazy(() => import("@/components/CircuitBackground").then(m => ({ default: m.CircuitBackground })));
 const FloatingJellyfish = lazy(() => import("@/components/FloatingJellyfish").then(m => ({ default: m.FloatingJellyfish })));
 
 const Index = () => {
-  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<{ id: string } | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-
+  
   const {
     conversations,
     currentConversationId,
@@ -39,22 +32,22 @@ const Index = () => {
   } = useConversations();
 
   const conversationIdRef = useRef<string | null>(null);
-
+  
   const handleMessageComplete = useCallback(async (
     role: "user" | "assistant",
     content: string,
     imageUrl?: string
   ) => {
     if (!user) return;
-
+    
     let convId = conversationIdRef.current;
-
+    
     // Create conversation on first user message
     if (!convId && role === "user") {
       convId = await createConversation(content.slice(0, 50));
       conversationIdRef.current = convId;
     }
-
+    
     if (convId) {
       await saveMessage(convId, role, content, imageUrl);
     }
@@ -72,7 +65,7 @@ const Index = () => {
     setUserName,
     streamingStats
   } = useChat({ onMessageComplete: handleMessageComplete });
-
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Update ref when currentConversationId changes
@@ -80,40 +73,20 @@ const Index = () => {
     conversationIdRef.current = currentConversationId;
   }, [currentConversationId]);
 
-  // SEO (SPA)
+  // Check auth state
   useEffect(() => {
-    setSeo({
-      title: "Medussa IA - Chat con Inteligencia Artificial",
-      description: "Chat de Medussa IA: tu asistente de inteligencia artificial para respuestas claras y rápidas.",
-      canonicalPath: "/",
-    });
-  }, []);
+    const checkAuth = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      setUser(authUser ? { id: authUser.id } : null);
+    };
+    checkAuth();
 
-  // Auth state
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ? { id: session.user.id } : null);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ? { id: session.user.id } : null);
-      setAuthChecked(true);
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // Redirect unauthenticated users to /auth
-  useEffect(() => {
-    if (!authChecked) return;
-    if (user) return;
-
-    const returnTo = encodeURIComponent(location.pathname + location.search);
-    navigate(`/auth?returnTo=${returnTo}`, { replace: true });
-  }, [authChecked, user, navigate, location.pathname, location.search]);
-
   
   // Auto-scroll siempre que hay nuevos mensajes o el asistente está escribiendo
   useEffect(() => {
