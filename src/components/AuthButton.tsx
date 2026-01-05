@@ -7,48 +7,51 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { auth, googleProvider } from "@/lib/firebase";
-import { signInWithPopup, signOut, onAuthStateChanged, User } from "firebase/auth";
+import { 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged, 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  User 
+} from "firebase/auth";
 import { LogIn, LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+type AuthMode = "login" | "register";
 
 export function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      // Validate Gmail accounts only
-      if (currentUser && currentUser.email && !currentUser.email.endsWith("@gmail.com")) {
-        toast.error("Solo se permiten cuentas Google (@gmail.com)");
-        signOut(auth);
-        return;
-      }
       setUser(currentUser);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const handleGoogleLogin = async () => {
-    if (!auth || !googleProvider) {
-      toast.error("Firebase no está configurado");
-      return;
-    }
+  const resetForm = () => {
+    setEmail("");
+    setPassword("");
+    setMode("login");
+  };
 
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      
-      if (!result.user.email?.endsWith("@gmail.com")) {
-        toast.error("Solo se permiten cuentas Google (@gmail.com)");
-        await signOut(auth);
-        return;
-      }
-      
+      await signInWithPopup(auth, googleProvider);
       toast.success("¡Bienvenido!");
       setIsOpen(false);
+      resetForm();
     } catch (error: any) {
       if (error.code === "auth/popup-closed-by-user") {
         return;
@@ -60,8 +63,49 @@ export function AuthButton() {
     }
   };
 
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error("Completa todos los campos");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (mode === "register") {
+        await createUserWithEmailAndPassword(auth, email, password);
+        toast.success("¡Cuenta creada exitosamente!");
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast.success("¡Bienvenido!");
+      }
+      setIsOpen(false);
+      resetForm();
+    } catch (error: any) {
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("Este correo ya está registrado");
+      } else if (error.code === "auth/invalid-email") {
+        toast.error("Correo inválido");
+      } else if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+        toast.error("Credenciales incorrectas");
+      } else if (error.code === "auth/user-not-found") {
+        toast.error("Usuario no encontrado");
+      } else {
+        toast.error(mode === "register" ? "Error al registrar" : "Error al iniciar sesión");
+      }
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
-    if (!auth) return;
     await signOut(auth);
     toast.success("Sesión cerrada");
   };
@@ -85,7 +129,10 @@ export function AuthButton() {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open);
+      if (!open) resetForm();
+    }}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -99,17 +146,63 @@ export function AuthButton() {
       <DialogContent className="bg-card border-border sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-foreground text-center">
-            Iniciar Sesión
+            {mode === "login" ? "Iniciar Sesión" : "Registrarse"}
           </DialogTitle>
-          <p className="text-sm text-muted-foreground text-center mt-2">
-            Solo se permiten cuentas de Google
-          </p>
         </DialogHeader>
+        
+        <form onSubmit={handleEmailAuth} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Correo electrónico</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="tu@correo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-background/50 border-border"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Contraseña</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="bg-background/50 border-border"
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : mode === "login" ? (
+              "Iniciar Sesión"
+            ) : (
+              "Registrarse"
+            )}
+          </Button>
+        </form>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">O continuar con</span>
+          </div>
+        </div>
         
         <Button
           type="button"
           variant="outline"
-          className="w-full flex items-center justify-center gap-2 bg-background/50 border-border hover:bg-primary/10 py-6 text-base"
+          className="w-full flex items-center justify-center gap-2 bg-background/50 border-border hover:bg-primary/10"
           onClick={handleGoogleLogin}
           disabled={isLoading}
         >
@@ -139,6 +232,32 @@ export function AuthButton() {
             </>
           )}
         </Button>
+
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          {mode === "login" ? (
+            <>
+              ¿No tienes cuenta?{" "}
+              <button
+                type="button"
+                onClick={() => setMode("register")}
+                className="text-primary hover:underline"
+              >
+                Regístrate
+              </button>
+            </>
+          ) : (
+            <>
+              ¿Ya tienes cuenta?{" "}
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                className="text-primary hover:underline"
+              >
+                Inicia sesión
+              </button>
+            </>
+          )}
+        </p>
       </DialogContent>
     </Dialog>
   );
