@@ -200,17 +200,23 @@ export function useChat(options?: UseChatOptions) {
     const webAction = detectWebSearch(input);
     let webContext = "";
     
-    // Función auxiliar para búsqueda web
+    // Función auxiliar para búsqueda web (requiere autenticación)
     const performWebSearch = async (query: string, isNews: boolean = false) => {
+      // Verificar autenticación primero - búsqueda web requiere login
+      const { data: { session: searchSession } } = await supabase.auth.getSession();
+      if (!searchSession?.access_token) {
+        console.log("Web search requires authentication");
+        return; // No buscar si no hay sesión
+      }
+      
       try {
         const loadingMsg = isNews ? "📰 Buscando noticias actuales..." : "🔍 Buscando en internet...";
         setMessages(prev => [...prev, { role: "assistant", content: loadingMsg }]);
         
-        const { data: { session: searchSession } } = await supabase.auth.getSession();
-        const searchHeaders: Record<string, string> = { "Content-Type": "application/json" };
-        if (searchSession?.access_token) {
-          searchHeaders.Authorization = `Bearer ${searchSession.access_token}`;
-        }
+        const searchHeaders: Record<string, string> = { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${searchSession.access_token}`,
+        };
 
         const searchResp = await fetch(SEARCH_URL, {
           method: "POST",
@@ -250,6 +256,8 @@ export function useChat(options?: UseChatOptions) {
               });
             }
           }
+        } else if (searchResp.status === 401) {
+          console.log("Search requires authentication");
         }
         setMessages(prev => prev.slice(0, -1));
       } catch (e) {
