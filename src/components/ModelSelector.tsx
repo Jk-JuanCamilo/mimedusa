@@ -92,7 +92,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
     <div className="flex items-center gap-2">
       <Brain className="w-4 h-4 text-muted-foreground" />
       <Select value={value} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger className="w-[200px] h-8 text-xs bg-card/50 border-border/50">
+        <SelectTrigger className="w-[200px] h-8 text-xs bg-card/50 border-border/50" aria-label="Seleccionar modelo de IA">
           <SelectValue placeholder="Seleccionar modelo" />
         </SelectTrigger>
         <SelectContent className="bg-card border-border max-h-[400px]">

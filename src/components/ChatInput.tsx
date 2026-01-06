@@ -346,6 +346,7 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
           variant={isListening ? "destructive" : "outline"}
           onClick={toggleListening}
           disabled={isLoading || disabled}
+          aria-label={isListening ? "Detener micrófono" : "Activar micrófono"}
           className={cn(
             "flex-shrink-0 transition-all",
             isListening && "animate-pulse"
@@ -361,6 +362,7 @@ export function ChatInput({ onSend, isLoading, disabled, selectedModel, onModelC
           type="submit"
           size="icon"
           disabled={(!input.trim() && !attachedImage) || isLoading || disabled}
+          aria-label={isLoading ? "Enviando mensaje" : "Enviar mensaje"}
           className="flex-shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground glow-primary transition-all"
         >
           {isLoading ? (
