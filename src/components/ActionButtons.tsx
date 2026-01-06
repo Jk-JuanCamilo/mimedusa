@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,10 +10,12 @@ import {
 } from "@/components/ui/dialog";
 import { ImagePlus, User, Trash2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
-import { PDFGeneratorDialog } from "./PDFGeneratorDialog";
-import { XLSXGeneratorDialog } from "./XLSXGeneratorDialog";
-import { DOCXGeneratorDialog } from "./DOCXGeneratorDialog";
-import { ImageEditorDialog } from "./ImageEditorDialog";
+
+// Lazy load heavy dialog components to reduce initial bundle size
+const PDFGeneratorDialog = lazy(() => import("./PDFGeneratorDialog").then(m => ({ default: m.PDFGeneratorDialog })));
+const XLSXGeneratorDialog = lazy(() => import("./XLSXGeneratorDialog").then(m => ({ default: m.XLSXGeneratorDialog })));
+const DOCXGeneratorDialog = lazy(() => import("./DOCXGeneratorDialog").then(m => ({ default: m.DOCXGeneratorDialog })));
+const ImageEditorDialog = lazy(() => import("./ImageEditorDialog").then(m => ({ default: m.ImageEditorDialog })));
 
 interface ActionButtonsProps {
   onAction: (action: string, fileContent?: string) => void;
@@ -131,33 +133,36 @@ export function ActionButtons({ onAction, disabled, userName, onUserNameChange, 
         </Button>
       ))}
 
-      {/* PDF Generator */}
-      <PDFGeneratorDialog 
-        disabled={disabled} 
-        onSaveToHistory={onSaveToHistory}
-        isAuthenticated={isAuthenticated}
-      />
+      {/* Lazy loaded heavy dialogs */}
+      <Suspense fallback={null}>
+        {/* PDF Generator */}
+        <PDFGeneratorDialog 
+          disabled={disabled} 
+          onSaveToHistory={onSaveToHistory}
+          isAuthenticated={isAuthenticated}
+        />
 
-      {/* XLSX Generator */}
-      <XLSXGeneratorDialog 
-        disabled={disabled} 
-        onSaveToHistory={onSaveToHistory}
-        isAuthenticated={isAuthenticated}
-      />
+        {/* XLSX Generator */}
+        <XLSXGeneratorDialog 
+          disabled={disabled} 
+          onSaveToHistory={onSaveToHistory}
+          isAuthenticated={isAuthenticated}
+        />
 
-      {/* DOCX Generator */}
-      <DOCXGeneratorDialog 
-        disabled={disabled} 
-        onSaveToHistory={onSaveToHistory}
-        isAuthenticated={isAuthenticated}
-      />
+        {/* DOCX Generator */}
+        <DOCXGeneratorDialog 
+          disabled={disabled} 
+          onSaveToHistory={onSaveToHistory}
+          isAuthenticated={isAuthenticated}
+        />
 
-      {/* Image Editor */}
-      <ImageEditorDialog
-        disabled={disabled}
-        isAuthenticated={isAuthenticated}
-        userId={userId}
-      />
+        {/* Image Editor */}
+        <ImageEditorDialog
+          disabled={disabled}
+          isAuthenticated={isAuthenticated}
+          userId={userId}
+        />
+      </Suspense>
     </div>
   );
 }
