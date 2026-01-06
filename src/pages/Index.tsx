@@ -12,18 +12,37 @@ import { useConversations } from "@/hooks/useConversations";
 import { Trash2, History, Plus, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-// Lazy load non-critical visual components
+// Lazy load non-critical visual components with deferred loading
 const CircuitBackground = lazy(() => import("@/components/CircuitBackground").then(m => ({
   default: m.CircuitBackground
 })));
 const FloatingJellyfish = lazy(() => import("@/components/FloatingJellyfish").then(m => ({
   default: m.FloatingJellyfish
 })));
+
+// Custom hook for deferred rendering of non-critical components
+const useDeferredRender = (delay = 100) => {
+  const [shouldRender, setShouldRender] = useState(false);
+  
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => setShouldRender(true));
+      } else {
+        setShouldRender(true);
+      }
+    }, delay);
+    return () => clearTimeout(timeoutId);
+  }, [delay]);
+  
+  return shouldRender;
+};
 const Index = () => {
   const [user, setUser] = useState<{
     id: string;
   } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const shouldRenderDecorations = useDeferredRender(150);
   const {
     conversations,
     currentConversationId,
@@ -139,15 +158,19 @@ const Index = () => {
     }
   }, [user, createConversation, saveMessage]);
   return <div className="flex flex-col h-screen relative">
-      {/* Animated Circuit Background - lazy loaded */}
-      <Suspense fallback={null}>
-        <CircuitBackground />
-      </Suspense>
+      {/* Animated Circuit Background - deferred lazy loaded */}
+      {shouldRenderDecorations && (
+        <Suspense fallback={null}>
+          <CircuitBackground />
+        </Suspense>
+      )}
       
-      {/* Floating Jellyfish - lazy loaded */}
-      <Suspense fallback={null}>
-        <FloatingJellyfish />
-      </Suspense>
+      {/* Floating Jellyfish - deferred lazy loaded */}
+      {shouldRenderDecorations && (
+        <Suspense fallback={null}>
+          <FloatingJellyfish />
+        </Suspense>
+      )}
 
       {/* Conversation Sidebar */}
       {user && <ConversationSidebar conversations={conversations} currentConversationId={currentConversationId} onSelectConversation={handleSelectConversation} onNewConversation={handleNewConversation} onDeleteConversation={handleDeleteConversation} onDeleteAllConversations={handleDeleteAllConversations} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
