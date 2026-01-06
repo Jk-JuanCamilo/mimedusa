@@ -32,15 +32,20 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
     checkMobile();
   }, []);
 
-  // Defer animation start to improve LCP
+  // Defer animation start significantly to improve LCP and minimize main-thread work
   useEffect(() => {
     if (isMobile) return; // Skip animation on mobile
     
-    const timeoutId = setTimeout(() => {
-      setShouldAnimate(true);
-    }, 500); // Increased delay
+    // Use requestIdleCallback for better scheduling when available
+    const startAnimation = () => setShouldAnimate(true);
     
-    return () => clearTimeout(timeoutId);
+    if ('requestIdleCallback' in window) {
+      const idleId = (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback(startAnimation, { timeout: 3000 });
+      return () => (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
+    } else {
+      const timeoutId = setTimeout(startAnimation, 2000);
+      return () => clearTimeout(timeoutId);
+    }
   }, [isMobile]);
 
   useEffect(() => {
@@ -62,8 +67,8 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
 
     const initNodes = (width: number, height: number) => {
       const nodes: Node[] = [];
-      // Further reduced node count
-      const nodeCount = Math.floor((width * height) / 50000);
+      // Minimal node count for performance
+      const nodeCount = Math.min(15, Math.floor((width * height) / 80000));
       
       for (let i = 0; i < nodeCount; i++) {
         nodes.push({
@@ -112,7 +117,7 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
     resizeObserver.observe(document.documentElement);
 
     let lastFrameTime = 0;
-    const targetFPS = 20; // Reduced to 20fps
+    const targetFPS = 15; // Further reduced to 15fps for minimal main-thread impact
     const frameInterval = 1000 / targetFPS;
 
     const drawCircuit = (currentTime: number) => {
