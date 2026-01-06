@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 
 interface Node {
@@ -19,38 +19,9 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
   const animationRef = useRef<number>();
   const nodesRef = useRef<Node[]>([]);
   const timeRef = useRef(0);
-  const dimensionsRef = useRef({ width: 0, height: 0 });
   const { resolvedTheme } = useTheme();
-  const [shouldAnimate, setShouldAnimate] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detect mobile devices to disable animation for performance
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    };
-    checkMobile();
-  }, []);
-
-  // Defer animation start significantly to improve LCP and minimize main-thread work
-  useEffect(() => {
-    if (isMobile) return; // Skip animation on mobile
-    
-    // Use requestIdleCallback for better scheduling when available
-    const startAnimation = () => setShouldAnimate(true);
-    
-    if ('requestIdleCallback' in window) {
-      const idleId = (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback(startAnimation, { timeout: 3000 });
-      return () => (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
-    } else {
-      const timeoutId = setTimeout(startAnimation, 2000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isMobile]);
 
   useEffect(() => {
-    if (!shouldAnimate || isMobile) return;
-    
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -61,29 +32,35 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
     
     // Theme colors
     const bgColor = isDark ? "rgb(10, 5, 20)" : "rgb(255, 255, 255)";
-    const bgFade = isDark ? "rgba(10, 5, 20, 0.15)" : "rgba(255, 255, 255, 0.15)";
+    const bgFade = isDark ? "rgba(10, 5, 20, 0.1)" : "rgba(255, 255, 255, 0.1)";
     const nodeHue = isDark ? 280 : 260;
+    const pulseHue = isDark ? 300 : 280;
     const nodeLightness = isDark ? 65 : 45;
 
-    const initNodes = (width: number, height: number) => {
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initNodes();
+    };
+
+    const initNodes = () => {
       const nodes: Node[] = [];
-      // Minimal node count for performance
-      const nodeCount = Math.min(15, Math.floor((width * height) / 80000));
+      const nodeCount = Math.floor((canvas.width * canvas.height) / 25000);
       
       for (let i = 0; i < nodeCount; i++) {
         nodes.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.15,
-          vy: (Math.random() - 0.5) * 0.15,
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
           connections: [],
           pulsePhase: Math.random() * Math.PI * 2,
         });
       }
 
-      // Create connections - reduced
+      // Create connections
       nodes.forEach((node, i) => {
-        const connectionCount = 1 + Math.floor(Math.random() * 2);
+        const connectionCount = 2 + Math.floor(Math.random() * 2);
         const distances: { index: number; dist: number }[] = [];
         
         nodes.forEach((other, j) => {
@@ -100,93 +77,132 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
       nodesRef.current = nodes;
     };
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0) {
-          dimensionsRef.current = { width, height };
-          canvas.width = width;
-          canvas.height = height;
-          initNodes(width, height);
-          ctx.fillStyle = bgColor;
-          ctx.fillRect(0, 0, width, height);
-        }
-      }
-    });
-
-    resizeObserver.observe(document.documentElement);
-
-    let lastFrameTime = 0;
-    const targetFPS = 15; // Further reduced to 15fps for minimal main-thread impact
-    const frameInterval = 1000 / targetFPS;
-
-    const drawCircuit = (currentTime: number) => {
-      const elapsed = currentTime - lastFrameTime;
-      
-      if (elapsed < frameInterval) {
-        animationRef.current = requestAnimationFrame(drawCircuit);
-        return;
-      }
-      
-      lastFrameTime = currentTime - (elapsed % frameInterval);
-      
-      const { width, height } = dimensionsRef.current;
-      if (width === 0 || height === 0) {
-        animationRef.current = requestAnimationFrame(drawCircuit);
-        return;
-      }
-
+    const drawCircuit = () => {
       ctx.fillStyle = bgFade;
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const nodes = nodesRef.current;
+      const time = timeRef.current;
 
-      // Draw connections - simplified
-      ctx.strokeStyle = `hsla(${nodeHue}, 100%, ${nodeLightness}%, 0.3)`;
-      ctx.lineWidth = 1;
+      // Draw connections
       nodes.forEach((node) => {
         node.connections.forEach(j => {
           const other = nodes[j];
           if (!other) return;
+
           const dist = Math.hypot(node.x - other.x, node.y - other.y);
-          if (dist > 150) return;
+          if (dist > 200) return;
+
+          const opacity = (1 - dist / 200) * (isDark ? 0.5 : 0.7);
+          
+          // Pulsing gradient along the line
+          const gradient = ctx.createLinearGradient(node.x, node.y, other.x, other.y);
+          const pulsePos = (Math.sin(time * 0.002 + node.pulsePhase) + 1) / 2;
+          
+          gradient.addColorStop(0, `hsla(${nodeHue}, 100%, ${nodeLightness}%, ${opacity * 0.3})`);
+          gradient.addColorStop(pulsePos, `hsla(${pulseHue}, 80%, ${nodeLightness - 5}%, ${opacity})`);
+          gradient.addColorStop(1, `hsla(${nodeHue}, 100%, ${nodeLightness}%, ${opacity * 0.3})`);
+
           ctx.beginPath();
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 1;
           ctx.moveTo(node.x, node.y);
+          
+          // Create circuit-like path (right angles)
+          const midX = (node.x + other.x) / 2;
+          const midY = (node.y + other.y) / 2;
+          
+          if (Math.random() > 0.5) {
+            ctx.lineTo(midX, node.y);
+            ctx.lineTo(midX, other.y);
+          } else {
+            ctx.lineTo(node.x, midY);
+            ctx.lineTo(other.x, midY);
+          }
+          
           ctx.lineTo(other.x, other.y);
           ctx.stroke();
         });
       });
 
-      // Draw nodes - simplified
-      ctx.fillStyle = `hsla(${nodeHue}, 100%, ${nodeLightness}%, 0.7)`;
+      // Draw nodes
       nodes.forEach((node) => {
+        const pulse = Math.sin(time * 0.003 + node.pulsePhase) * 0.5 + 0.5;
+        const size = 2 + pulse * 2;
+        
+        // Glow effect
+        const glowGradient = ctx.createRadialGradient(
+          node.x, node.y, 0,
+          node.x, node.y, size * 4
+        );
+        glowGradient.addColorStop(0, `hsla(${nodeHue}, 100%, ${nodeLightness}%, ${0.8 * pulse})`);
+        glowGradient.addColorStop(0.5, `hsla(${pulseHue}, 80%, ${nodeLightness - 5}%, ${0.3 * pulse})`);
+        glowGradient.addColorStop(1, "transparent");
+        
         ctx.beginPath();
-        ctx.arc(node.x, node.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = glowGradient;
+        ctx.arc(node.x, node.y, size * 4, 0, Math.PI * 2);
         ctx.fill();
 
+        // Core
+        ctx.beginPath();
+        ctx.fillStyle = `hsla(${nodeHue}, 100%, ${nodeLightness + 5}%, ${0.6 + pulse * 0.4})`;
+        ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Update position
         node.x += node.vx;
         node.y += node.vy;
 
-        if (node.x < 0 || node.x > width) node.vx *= -1;
-        if (node.y < 0 || node.y > height) node.vy *= -1;
+        // Bounce off edges
+        if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
+        if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
 
-        node.x = Math.max(0, Math.min(width, node.x));
-        node.y = Math.max(0, Math.min(height, node.y));
+        // Keep in bounds
+        node.x = Math.max(0, Math.min(canvas.width, node.x));
+        node.y = Math.max(0, Math.min(canvas.height, node.y));
       });
 
-      timeRef.current += 50;
+      // Draw data pulses traveling along connections
+      nodes.forEach((node) => {
+        node.connections.forEach(j => {
+          const other = nodes[j];
+          if (!other) return;
+          
+          const dist = Math.hypot(node.x - other.x, node.y - other.y);
+          if (dist > 200) return;
+
+          const pulseT = ((time * 0.001 + node.pulsePhase) % 1);
+          const px = node.x + (other.x - node.x) * pulseT;
+          const py = node.y + (other.y - node.y) * pulseT;
+
+          ctx.beginPath();
+          ctx.fillStyle = `hsla(${pulseHue}, 100%, ${nodeLightness + 5}%, 0.8)`;
+          ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+
+      timeRef.current += 16;
       animationRef.current = requestAnimationFrame(drawCircuit);
     };
 
-    animationRef.current = requestAnimationFrame(drawCircuit);
+    resize();
+    window.addEventListener("resize", resize);
+    
+    // Initial fill
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    drawCircuit();
 
     return () => {
-      resizeObserver.disconnect();
+      window.removeEventListener("resize", resize);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [resolvedTheme, shouldAnimate, isMobile]);
+  }, [resolvedTheme]);
 
   const bgStyle = resolvedTheme === "dark" ? "rgb(10, 5, 20)" : "rgb(255, 255, 255)";
 
