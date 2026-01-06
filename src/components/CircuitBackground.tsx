@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 
 interface Node {
@@ -20,8 +20,20 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
   const nodesRef = useRef<Node[]>([]);
   const timeRef = useRef(0);
   const { resolvedTheme } = useTheme();
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+
+  // Defer animation start to improve LCP
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setShouldAnimate(true);
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   useEffect(() => {
+    if (!shouldAnimate) return;
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -45,14 +57,15 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
 
     const initNodes = () => {
       const nodes: Node[] = [];
-      const nodeCount = Math.floor((canvas.width * canvas.height) / 25000);
+      // Reduced node count for better performance
+      const nodeCount = Math.floor((canvas.width * canvas.height) / 35000);
       
       for (let i = 0; i < nodeCount; i++) {
         nodes.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: (Math.random() - 0.5) * 0.3,
+          vx: (Math.random() - 0.5) * 0.2,
+          vy: (Math.random() - 0.5) * 0.2,
           connections: [],
           pulsePhase: Math.random() * Math.PI * 2,
         });
@@ -77,7 +90,20 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
       nodesRef.current = nodes;
     };
 
-    const drawCircuit = () => {
+    let lastFrameTime = 0;
+    const targetFPS = 30; // Reduce to 30fps for better performance
+    const frameInterval = 1000 / targetFPS;
+
+    const drawCircuit = (currentTime: number) => {
+      const elapsed = currentTime - lastFrameTime;
+      
+      if (elapsed < frameInterval) {
+        animationRef.current = requestAnimationFrame(drawCircuit);
+        return;
+      }
+      
+      lastFrameTime = currentTime - (elapsed % frameInterval);
+      
       ctx.fillStyle = bgFade;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -95,31 +121,11 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
 
           const opacity = (1 - dist / 200) * (isDark ? 0.5 : 0.7);
           
-          // Pulsing gradient along the line
-          const gradient = ctx.createLinearGradient(node.x, node.y, other.x, other.y);
-          const pulsePos = (Math.sin(time * 0.002 + node.pulsePhase) + 1) / 2;
-          
-          gradient.addColorStop(0, `hsla(${nodeHue}, 100%, ${nodeLightness}%, ${opacity * 0.3})`);
-          gradient.addColorStop(pulsePos, `hsla(${pulseHue}, 80%, ${nodeLightness - 5}%, ${opacity})`);
-          gradient.addColorStop(1, `hsla(${nodeHue}, 100%, ${nodeLightness}%, ${opacity * 0.3})`);
-
+          // Simplified line without gradient for better performance
           ctx.beginPath();
-          ctx.strokeStyle = gradient;
+          ctx.strokeStyle = `hsla(${nodeHue}, 100%, ${nodeLightness}%, ${opacity * 0.5})`;
           ctx.lineWidth = 1;
           ctx.moveTo(node.x, node.y);
-          
-          // Create circuit-like path (right angles)
-          const midX = (node.x + other.x) / 2;
-          const midY = (node.y + other.y) / 2;
-          
-          if (Math.random() > 0.5) {
-            ctx.lineTo(midX, node.y);
-            ctx.lineTo(midX, other.y);
-          } else {
-            ctx.lineTo(node.x, midY);
-            ctx.lineTo(other.x, midY);
-          }
-          
           ctx.lineTo(other.x, other.y);
           ctx.stroke();
         });
@@ -130,23 +136,9 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
         const pulse = Math.sin(time * 0.003 + node.pulsePhase) * 0.5 + 0.5;
         const size = 2 + pulse * 2;
         
-        // Glow effect
-        const glowGradient = ctx.createRadialGradient(
-          node.x, node.y, 0,
-          node.x, node.y, size * 4
-        );
-        glowGradient.addColorStop(0, `hsla(${nodeHue}, 100%, ${nodeLightness}%, ${0.8 * pulse})`);
-        glowGradient.addColorStop(0.5, `hsla(${pulseHue}, 80%, ${nodeLightness - 5}%, ${0.3 * pulse})`);
-        glowGradient.addColorStop(1, "transparent");
-        
+        // Simplified glow effect
         ctx.beginPath();
-        ctx.fillStyle = glowGradient;
-        ctx.arc(node.x, node.y, size * 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Core
-        ctx.beginPath();
-        ctx.fillStyle = `hsla(${nodeHue}, 100%, ${nodeLightness + 5}%, ${0.6 + pulse * 0.4})`;
+        ctx.fillStyle = `hsla(${nodeHue}, 100%, ${nodeLightness}%, ${0.6 + pulse * 0.4})`;
         ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
         ctx.fill();
 
@@ -163,27 +155,7 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
         node.y = Math.max(0, Math.min(canvas.height, node.y));
       });
 
-      // Draw data pulses traveling along connections
-      nodes.forEach((node) => {
-        node.connections.forEach(j => {
-          const other = nodes[j];
-          if (!other) return;
-          
-          const dist = Math.hypot(node.x - other.x, node.y - other.y);
-          if (dist > 200) return;
-
-          const pulseT = ((time * 0.001 + node.pulsePhase) % 1);
-          const px = node.x + (other.x - node.x) * pulseT;
-          const py = node.y + (other.y - node.y) * pulseT;
-
-          ctx.beginPath();
-          ctx.fillStyle = `hsla(${pulseHue}, 100%, ${nodeLightness + 5}%, 0.8)`;
-          ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      });
-
-      timeRef.current += 16;
+      timeRef.current += 32;
       animationRef.current = requestAnimationFrame(drawCircuit);
     };
 
@@ -194,7 +166,7 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    drawCircuit();
+    animationRef.current = requestAnimationFrame(drawCircuit);
 
     return () => {
       window.removeEventListener("resize", resize);
@@ -202,7 +174,7 @@ export function CircuitBackground({ className }: CircuitBackgroundProps) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [resolvedTheme]);
+  }, [resolvedTheme, shouldAnimate]);
 
   const bgStyle = resolvedTheme === "dark" ? "rgb(10, 5, 20)" : "rgb(255, 255, 255)";
 
