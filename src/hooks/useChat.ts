@@ -21,19 +21,45 @@ const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/firecrawl-
 
 const USER_NAME_KEY = "medussa_user_name";
 
-// Detecta si el usuario quiere buscar en internet
-function detectWebSearch(message: string): { type: 'search' | 'scrape' | null; query: string } {
-  const searchPatterns = [
-    /(?:busca|buscar|búscame|investiga|investigar|qué hay sobre|qué dice internet|información sobre|noticias de|noticias sobre|actualidad de|últimas noticias)\s+(.+)/i,
-    /(?:search|look up|find info|what's new about)\s+(.+)/i,
+// Detecta si el usuario quiere buscar en internet o necesita info actualizada
+function detectWebSearch(message: string): { type: 'search' | 'scrape' | 'news' | null; query: string } {
+  const lowerMsg = message.toLowerCase();
+  
+  // Patrones de NOTICIAS - siempre buscar automáticamente
+  const newsKeywords = [
+    'noticias', 'últimas noticias', 'última hora', 'breaking news', 'news',
+    'qué está pasando', 'qué pasó', 'qué pasa', 'actualidad', 'novedades',
+    'hoy en', 'esta semana', 'ayer', 'reciente', 'tendencias', 'trending',
+    'mundial', 'elecciones', 'guerra', 'crisis', 'escándalo', 'fallecio', 'murió',
+    'accidente', 'terremoto', 'huracán', 'atentado', 'precio del', 'cotización',
+    'bolsa de valores', 'bitcoin', 'criptomonedas', 'dólar hoy', 'euro hoy'
   ];
   
+  // Detectar si necesita noticias/info actual
+  const needsNews = newsKeywords.some(keyword => lowerMsg.includes(keyword));
+  
+  // Patrones de búsqueda explícita
+  const searchPatterns = [
+    /(?:busca|buscar|búscame|investiga|investigar|qué hay sobre|qué dice internet|información sobre|noticias de|noticias sobre|actualidad de|últimas noticias|dime sobre|cuéntame sobre|explícame sobre)\s+(.+)/i,
+    /(?:search|look up|find info|what's new about|tell me about|what happened with)\s+(.+)/i,
+  ];
+  
+  // Patrones de URLs
   const urlPatterns = [
     /(?:analiza|analizar|resume|resumir|lee|leer|extrae|extraer|qué dice|contenido de)\s+(https?:\/\/[^\s]+)/i,
     /(?:analyze|summarize|read|extract from)\s+(https?:\/\/[^\s]+)/i,
-    /(https?:\/\/[^\s]+)/i, // URL directa
+    /(https?:\/\/[^\s]+)/i,
   ];
   
+  // Primero verificar URLs
+  for (const pattern of urlPatterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      return { type: 'scrape', query: match[1].trim() };
+    }
+  }
+  
+  // Luego búsquedas explícitas
   for (const pattern of searchPatterns) {
     const match = message.match(pattern);
     if (match && match[1]) {
@@ -41,11 +67,13 @@ function detectWebSearch(message: string): { type: 'search' | 'scrape' | null; q
     }
   }
   
-  for (const pattern of urlPatterns) {
-    const match = message.match(pattern);
-    if (match && match[1]) {
-      return { type: 'scrape', query: match[1].trim() };
-    }
+  // Si contiene keywords de noticias, buscar automáticamente
+  if (needsNews) {
+    // Extraer el tema principal del mensaje
+    const cleanQuery = message
+      .replace(/^(cuáles son las|cuál es la|dime las|dame las|qué|cuáles|cómo|dónde|cuándo|por qué)\s*/i, '')
+      .trim();
+    return { type: 'news', query: cleanQuery || message };
   }
   
   return { type: null, query: '' };
@@ -172,11 +200,12 @@ export function useChat(options?: UseChatOptions) {
     const webAction = detectWebSearch(input);
     let webContext = "";
     
-    if (webAction.type === 'search') {
+    // Función auxiliar para búsqueda web
+    const performWebSearch = async (query: string, isNews: boolean = false) => {
       try {
-        setMessages(prev => [...prev, { role: "assistant", content: "🔍 Buscando en internet..." }]);
+        const loadingMsg = isNews ? "📰 Buscando noticias actuales..." : "🔍 Buscando en internet...";
+        setMessages(prev => [...prev, { role: "assistant", content: loadingMsg }]);
         
-        // Obtener token si existe para búsqueda web
         const { data: { session: searchSession } } = await supabase.auth.getSession();
         const searchHeaders: Record<string, string> = { "Content-Type": "application/json" };
         if (searchSession?.access_token) {
@@ -186,33 +215,57 @@ export function useChat(options?: UseChatOptions) {
         const searchResp = await fetch(SEARCH_URL, {
           method: "POST",
           headers: searchHeaders,
-          body: JSON.stringify({ query: webAction.query }),
+          body: JSON.stringify({ 
+            query: isNews ? `${query} últimas noticias ${new Date().toLocaleDateString('es-CO')}` : query,
+            options: {
+              limit: isNews ? 8 : 5,
+              lang: 'es',
+              country: 'co'
+            }
+          }),
         });
         
         if (searchResp.ok) {
           const searchData = await searchResp.json();
           if (searchData.data && searchData.data.length > 0) {
-            webContext = "\n\n📊 INFORMACIÓN DE INTERNET (actualizada):\n";
-            searchData.data.slice(0, 3).forEach((result: any, i: number) => {
-              webContext += `\n${i + 1}. **${result.title || 'Sin título'}**\n`;
-              webContext += `   ${result.url}\n`;
-              if (result.markdown) {
-                webContext += `   ${result.markdown.slice(0, 500)}...\n`;
-              }
-            });
+            if (isNews) {
+              webContext = "\n\n📰 NOTICIAS EN TIEMPO REAL (Búsqueda actualizada):\n";
+              webContext += `🕐 Fecha de búsqueda: ${new Date().toLocaleString('es-CO')}\n`;
+              searchData.data.slice(0, 6).forEach((result: any, i: number) => {
+                webContext += `\n📌 **${i + 1}. ${result.title || 'Sin título'}**\n`;
+                webContext += `   🔗 Fuente: ${result.url}\n`;
+                if (result.markdown) {
+                  webContext += `   📝 Resumen: ${result.markdown.slice(0, 400)}...\n`;
+                }
+              });
+              webContext += "\n⚠️ IMPORTANTE: Presenta esta información con titulares, fuentes y links como se solicitó.";
+            } else {
+              webContext = "\n\n📊 INFORMACIÓN DE INTERNET (actualizada):\n";
+              searchData.data.slice(0, 5).forEach((result: any, i: number) => {
+                webContext += `\n${i + 1}. **${result.title || 'Sin título'}**\n`;
+                webContext += `   ${result.url}\n`;
+                if (result.markdown) {
+                  webContext += `   ${result.markdown.slice(0, 500)}...\n`;
+                }
+              });
+            }
           }
         }
-        // Quitar mensaje temporal
         setMessages(prev => prev.slice(0, -1));
       } catch (e) {
         console.error("Search error:", e);
         setMessages(prev => prev.slice(0, -1));
       }
+    };
+    
+    if (webAction.type === 'search') {
+      await performWebSearch(webAction.query, false);
+    } else if (webAction.type === 'news') {
+      await performWebSearch(webAction.query, true);
     } else if (webAction.type === 'scrape') {
       try {
         setMessages(prev => [...prev, { role: "assistant", content: "📄 Analizando página web..." }]);
         
-        // Obtener token si existe para scraping
         const { data: { session: scrapeSession } } = await supabase.auth.getSession();
         const scrapeHeaders: Record<string, string> = { "Content-Type": "application/json" };
         if (scrapeSession?.access_token) {
@@ -232,7 +285,6 @@ export function useChat(options?: UseChatOptions) {
             webContext = `\n\n📄 CONTENIDO DE ${webAction.query}:\n${content.slice(0, 2000)}`;
           }
         }
-        // Quitar mensaje temporal
         setMessages(prev => prev.slice(0, -1));
       } catch (e) {
         console.error("Scrape error:", e);
