@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.firecrawl-scrape]
 verify_jwt = true
+
+[functions.fetch-news]
+verify_jwt = true
