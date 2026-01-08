@@ -18,7 +18,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/firecrawl-search`;
 const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/firecrawl-scrape`;
-
+const NEWS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-news`;
 const USER_NAME_KEY = "medussa_user_name";
 
 // Detecta si el usuario quiere buscar en internet o necesita info actualizada
@@ -200,61 +200,86 @@ export function useChat(options?: UseChatOptions) {
     const webAction = detectWebSearch(input);
     let webContext = "";
     
-    // Función auxiliar para búsqueda web (requiere autenticación)
-    const performWebSearch = async (query: string, isNews: boolean = false) => {
-      // Verificar autenticación primero - búsqueda web requiere login
-      const { data: { session: searchSession } } = await supabase.auth.getSession();
-      if (!searchSession?.access_token) {
-        console.log("Web search requires authentication");
-        return; // No buscar si no hay sesión
+    // Función auxiliar para obtener noticias de fuentes confiables
+    const fetchNews = async (query: string) => {
+      const { data: { session: newsSession } } = await supabase.auth.getSession();
+      if (!newsSession?.access_token) {
+        console.log("News fetch requires authentication");
+        return;
       }
       
       try {
-        const loadingMsg = isNews ? "📰 Buscando noticias actuales..." : "🔍 Buscando en internet...";
-        setMessages(prev => [...prev, { role: "assistant", content: loadingMsg }]);
+        setMessages(prev => [...prev, { role: "assistant", content: "📰 Buscando noticias de fuentes confiables..." }]);
         
-        const searchHeaders: Record<string, string> = { 
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${searchSession.access_token}`,
-        };
+        const newsResp = await fetch(NEWS_URL, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${newsSession.access_token}`,
+          },
+          body: JSON.stringify({ query, limit: 8 }),
+        });
+        
+        if (newsResp.ok) {
+          const newsData = await newsResp.json();
+          if (newsData.articles && newsData.articles.length > 0) {
+            webContext = "\n\n📰 NOTICIAS DE FUENTES CONFIABLES:\n";
+            webContext += `🕐 Actualizado: ${new Date().toLocaleString('es-CO')}\n`;
+            webContext += `📡 Fuentes: Reuters, AP, BBC, CNN, El País, The Guardian\n\n`;
+            
+            newsData.articles.forEach((article: any, i: number) => {
+              webContext += `**${i + 1}. ${article.title}**\n`;
+              webContext += `   📌 Fuente: ${article.source.name}\n`;
+              webContext += `   📝 ${article.description}\n`;
+              webContext += `   🔗 ${article.url}\n\n`;
+            });
+            
+            webContext += "\n⚠️ IMPORTANTE: Presenta estas noticias con titulares claros, menciona la fuente de cada noticia y proporciona los links.";
+          }
+        } else if (newsResp.status === 401) {
+          console.log("News fetch requires authentication");
+        }
+        setMessages(prev => prev.slice(0, -1));
+      } catch (e) {
+        console.error("News fetch error:", e);
+        setMessages(prev => prev.slice(0, -1));
+      }
+    };
 
+    // Función auxiliar para búsqueda web (requiere autenticación)
+    const performWebSearch = async (query: string) => {
+      const { data: { session: searchSession } } = await supabase.auth.getSession();
+      if (!searchSession?.access_token) {
+        console.log("Web search requires authentication");
+        return;
+      }
+      
+      try {
+        setMessages(prev => [...prev, { role: "assistant", content: "🔍 Buscando en internet..." }]);
+        
         const searchResp = await fetch(SEARCH_URL, {
           method: "POST",
-          headers: searchHeaders,
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${searchSession.access_token}`,
+          },
           body: JSON.stringify({ 
-            query: isNews ? `${query} últimas noticias ${new Date().toLocaleDateString('es-CO')}` : query,
-            options: {
-              limit: isNews ? 8 : 5,
-              lang: 'es',
-              country: 'co'
-            }
+            query,
+            options: { limit: 5, lang: 'es', country: 'co' }
           }),
         });
         
         if (searchResp.ok) {
           const searchData = await searchResp.json();
           if (searchData.data && searchData.data.length > 0) {
-            if (isNews) {
-              webContext = "\n\n📰 NOTICIAS EN TIEMPO REAL (Búsqueda actualizada):\n";
-              webContext += `🕐 Fecha de búsqueda: ${new Date().toLocaleString('es-CO')}\n`;
-              searchData.data.slice(0, 6).forEach((result: any, i: number) => {
-                webContext += `\n📌 **${i + 1}. ${result.title || 'Sin título'}**\n`;
-                webContext += `   🔗 Fuente: ${result.url}\n`;
-                if (result.markdown) {
-                  webContext += `   📝 Resumen: ${result.markdown.slice(0, 400)}...\n`;
-                }
-              });
-              webContext += "\n⚠️ IMPORTANTE: Presenta esta información con titulares, fuentes y links como se solicitó.";
-            } else {
-              webContext = "\n\n📊 INFORMACIÓN DE INTERNET (actualizada):\n";
-              searchData.data.slice(0, 5).forEach((result: any, i: number) => {
-                webContext += `\n${i + 1}. **${result.title || 'Sin título'}**\n`;
-                webContext += `   ${result.url}\n`;
-                if (result.markdown) {
-                  webContext += `   ${result.markdown.slice(0, 500)}...\n`;
-                }
-              });
-            }
+            webContext = "\n\n📊 INFORMACIÓN DE INTERNET (actualizada):\n";
+            searchData.data.slice(0, 5).forEach((result: any, i: number) => {
+              webContext += `\n${i + 1}. **${result.title || 'Sin título'}**\n`;
+              webContext += `   ${result.url}\n`;
+              if (result.markdown) {
+                webContext += `   ${result.markdown.slice(0, 500)}...\n`;
+              }
+            });
           }
         } else if (searchResp.status === 401) {
           console.log("Search requires authentication");
@@ -267,9 +292,9 @@ export function useChat(options?: UseChatOptions) {
     };
     
     if (webAction.type === 'search') {
-      await performWebSearch(webAction.query, false);
+      await performWebSearch(webAction.query);
     } else if (webAction.type === 'news') {
-      await performWebSearch(webAction.query, true);
+      await fetchNews(webAction.query);
     } else if (webAction.type === 'scrape') {
       try {
         setMessages(prev => [...prev, { role: "assistant", content: "📄 Analizando página web..." }]);
