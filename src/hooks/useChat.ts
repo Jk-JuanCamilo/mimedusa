@@ -25,14 +25,31 @@ const USER_NAME_KEY = "medussa_user_name";
 function detectWebSearch(message: string): { type: 'search' | 'scrape' | 'news' | null; query: string } {
   const lowerMsg = message.toLowerCase();
   
-  // Patrones de NOTICIAS - siempre buscar automáticamente
+  // Patrones de NOTICIAS - palabras clave ampliadas
   const newsKeywords = [
-    'noticias', 'últimas noticias', 'última hora', 'breaking news', 'news',
-    'qué está pasando', 'qué pasó', 'qué pasa', 'actualidad', 'novedades',
+    // Palabras directas de noticias
+    'noticias', 'noticia', 'últimas noticias', 'última hora', 'breaking news', 'news',
+    'qué está pasando', 'qué pasó', 'qué pasa', 'actualidad', 'novedades', 'novedad',
     'hoy en', 'esta semana', 'ayer', 'reciente', 'tendencias', 'trending',
-    'mundial', 'elecciones', 'guerra', 'crisis', 'escándalo', 'fallecio', 'murió',
-    'accidente', 'terremoto', 'huracán', 'atentado', 'precio del', 'cotización',
-    'bolsa de valores', 'bitcoin', 'criptomonedas', 'dólar hoy', 'euro hoy'
+    // Eventos importantes
+    'mundial', 'elecciones', 'guerra', 'crisis', 'escándalo', 'fallecio', 'murió', 'murio',
+    'accidente', 'terremoto', 'huracán', 'huracan', 'atentado', 'incendio', 'explosión',
+    // Finanzas
+    'precio del', 'cotización', 'cotizacion', 'bolsa de valores', 'bitcoin', 'criptomonedas', 
+    'dólar hoy', 'dolar hoy', 'euro hoy', 'mercado', 'inflación', 'inflacion',
+    // Deportes
+    'marcador', 'partido', 'copa', 'champions', 'eliminatoria', 'clasificación', 'fichaje',
+    'gol de', 'resultado del', 'cómo quedó', 'como quedo', 'ganó', 'gano', 'perdió', 'perdio',
+    // Preguntas sobre eventos
+    'que paso con', 'qué pasó con', 'que sucedio', 'qué sucedió', 'ultima noticia de', 
+    'última noticia de', 'que hay de', 'qué hay de', 'cuéntame de', 'cuentame de',
+    'sabías que', 'sabias que', 'es cierto que', 'es verdad que',
+    // Entretenimiento
+    'celebridad', 'famoso', 'actor', 'actriz', 'cantante', 'película', 'pelicula', 'serie',
+    // Política y sociedad  
+    'presidente', 'congreso', 'ley', 'protesta', 'manifestación', 'manifestacion',
+    // Colombia específico
+    'colombia', 'bogotá', 'bogota', 'medellín', 'medellin', 'cali', 'barranquilla'
   ];
   
   // Detectar si necesita noticias/info actual
@@ -59,10 +76,14 @@ function detectWebSearch(message: string): { type: 'search' | 'scrape' | 'news' 
     }
   }
   
-  // Luego búsquedas explícitas
+  // Luego búsquedas explícitas - prioridad a noticias
   for (const pattern of searchPatterns) {
     const match = message.match(pattern);
     if (match && match[1]) {
+      // Si menciona noticias, usar tipo news
+      if (lowerMsg.includes('noticia')) {
+        return { type: 'news', query: match[1].trim() };
+      }
       return { type: 'search', query: match[1].trim() };
     }
   }
@@ -71,7 +92,7 @@ function detectWebSearch(message: string): { type: 'search' | 'scrape' | 'news' 
   if (needsNews) {
     // Extraer el tema principal del mensaje
     const cleanQuery = message
-      .replace(/^(cuáles son las|cuál es la|dime las|dame las|qué|cuáles|cómo|dónde|cuándo|por qué)\s*/i, '')
+      .replace(/^(cuáles son las|cuál es la|dime las|dame las|qué|cuáles|cómo|dónde|cuándo|por qué|que|como|donde|cuando)\s*/i, '')
       .trim();
     return { type: 'news', query: cleanQuery || message };
   }
