@@ -3,19 +3,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Fuentes de noticias confiables
-const TRUSTED_SOURCES = [
-  'reuters.com',
-  'apnews.com',
-  'bbc.com',
-  'cnn.com',
-  'elpais.com',
-  'nytimes.com',
-  'theguardian.com',
-  'france24.com',
-  'dw.com',
-  'aljazeera.com'
-];
+interface GNewsArticle {
+  title: string;
+  description: string;
+  content: string;
+  url: string;
+  image: string;
+  publishedAt: string;
+  source: {
+    name: string;
+    url: string;
+  };
+}
 
 interface NewsArticle {
   title: string;
@@ -23,6 +22,7 @@ interface NewsArticle {
   source: { name: string };
   url: string;
   publishedAt: string;
+  image?: string;
 }
 
 Deno.serve(async (req) => {
@@ -31,92 +31,45 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query, category, limit = 8 } = await req.json();
+    const { query, category, limit = 5 } = await req.json();
 
-    const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
+    const apiKey = Deno.env.get('GNEWS_API_KEY');
     if (!apiKey) {
-      console.error('FIRECRAWL_API_KEY not configured');
+      console.error('GNEWS_API_KEY not configured');
       return new Response(
         JSON.stringify({ success: false, error: 'Servicio de noticias no configurado' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Construir query optimizada para noticias de fuentes confiables
-    const today = new Date();
-    const dateStr = today.toISOString().split('T')[0];
+    // Construir URL de GNews
+    const searchQuery = query || 'últimas noticias';
+    const maxResults = Math.min(limit, 10);
     
-    // Filtrar solo fuentes confiables
-    const sourcesFilter = TRUSTED_SOURCES.slice(0, 5).map(s => `site:${s}`).join(' OR ');
-    const newsQuery = query 
-      ? `(${query}) (${sourcesFilter}) noticias ${dateStr}`
-      : `últimas noticias importantes hoy ${dateStr} (${sourcesFilter})`;
+    const gnewsUrl = `https://gnews.io/api/v4/search?q=${encodeURIComponent(searchQuery)}&lang=es&country=co&max=${maxResults}&apikey=${apiKey}`;
 
-    console.log('Fetching news:', newsQuery);
+    console.log('Fetching news from GNews:', searchQuery);
 
-    const response = await fetch('https://api.firecrawl.dev/v1/search', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: newsQuery,
-        limit: Math.min(limit, 10),
-        lang: 'es',
-        country: 'co',
-        scrapeOptions: { formats: ['markdown'] },
-      }),
-    });
-
+    const response = await fetch(gnewsUrl);
     const data = await response.json();
 
-    if (!response.ok) {
-      console.error('News fetch error:', data);
+    if (!response.ok || data.errors) {
+      console.error('GNews error:', data);
       return new Response(
-        JSON.stringify({ success: false, error: data.error || 'Error al obtener noticias' }),
+        JSON.stringify({ success: false, error: data.errors?.[0] || 'Error al obtener noticias' }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Transformar resultados al formato de noticias estructurado
-    const articles: NewsArticle[] = (data.data || []).map((result: any) => {
-      // Extraer nombre de fuente de la URL
-      let sourceName = 'Fuente desconocida';
-      try {
-        const url = new URL(result.url);
-        const domain = url.hostname.replace('www.', '');
-        // Mapear dominio a nombre de fuente
-        const sourceMap: Record<string, string> = {
-          'reuters.com': 'Reuters',
-          'apnews.com': 'Associated Press',
-          'bbc.com': 'BBC',
-          'cnn.com': 'CNN',
-          'elpais.com': 'El País',
-          'nytimes.com': 'The New York Times',
-          'theguardian.com': 'The Guardian',
-          'france24.com': 'France 24',
-          'dw.com': 'Deutsche Welle',
-          'aljazeera.com': 'Al Jazeera',
-        };
-        sourceName = sourceMap[domain] || domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
-      } catch {
-        // Mantener fuente desconocida
-      }
-
-      // Extraer descripción del markdown
-      const description = result.markdown 
-        ? result.markdown.slice(0, 250).replace(/[\n\r]+/g, ' ').trim() + '...'
-        : result.description || 'Sin descripción disponible';
-
-      return {
-        title: result.title || 'Sin título',
-        description,
-        source: { name: sourceName },
-        url: result.url,
-        publishedAt: new Date().toISOString().split('T')[0], // Usar fecha actual
-      };
-    });
+    // Transformar artículos de GNews al formato esperado
+    const articles: NewsArticle[] = (data.articles || []).map((article: GNewsArticle) => ({
+      title: article.title,
+      description: article.description || article.content?.slice(0, 200) + '...',
+      source: { name: article.source.name },
+      url: article.url,
+      publishedAt: article.publishedAt,
+      image: article.image,
+    }));
 
     console.log('News fetched successfully:', articles.length, 'articles');
 
