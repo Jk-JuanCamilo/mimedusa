@@ -25,7 +25,7 @@ const USER_NAME_KEY = "medussa_user_name";
 function detectWebSearch(message: string): { type: 'search' | 'scrape' | 'news' | null; query: string } {
   const lowerMsg = message.toLowerCase();
   
-  // Patrones de NOTICIAS - palabras clave ampliadas
+  // Patrones de NOTICIAS - palabras clave SUPER ampliadas para 2026
   const newsKeywords = [
     // Palabras directas de noticias
     'noticias', 'noticia', 'últimas noticias', 'última hora', 'breaking news', 'news',
@@ -49,11 +49,40 @@ function detectWebSearch(message: string): { type: 'search' | 'scrape' | 'news' 
     // Política y sociedad  
     'presidente', 'congreso', 'ley', 'protesta', 'manifestación', 'manifestacion',
     // Colombia específico
-    'colombia', 'bogotá', 'bogota', 'medellín', 'medellin', 'cali', 'barranquilla'
+    'colombia', 'bogotá', 'bogota', 'medellín', 'medellin', 'cali', 'barranquilla',
+    // Información actualizada 2026
+    'hoy', 'ahora', 'actual', 'actualizado', 'este año', '2026', '2025',
+    'últimamente', 'recientemente', 'en este momento', 'actualmente',
+    'qué hay de nuevo', 'algo nuevo', 'lo más reciente', 'lo último',
+    // Tecnología
+    'ia', 'inteligencia artificial', 'gpt', 'gemini', 'claude', 'chatgpt',
+    'iphone', 'android', 'apple', 'google', 'microsoft', 'meta', 'tesla',
+    'spacex', 'starlink', 'neuralink', 'openai', 'nvidia', 'amd',
+    // Clima
+    'clima', 'tiempo', 'pronóstico', 'pronostico', 'temperatura', 'lluvia',
+    // Eventos globales
+    'g20', 'onu', 'otan', 'cumbre', 'tratado', 'acuerdo', 'sanción',
+    // Personas famosas (buscar información actualizada)
+    'elon musk', 'trump', 'biden', 'petro', 'milei', 'lula', 'maduro'
+  ];
+  
+  // Preguntas que implícitamente necesitan información actual
+  const implicitCurrentPatterns = [
+    /quién es el (?:presidente|líder|ceo|director)/i,
+    /cuánto (?:está|vale|cuesta)/i,
+    /cómo está (?:el|la)/i,
+    /qué (?:pasó|pasa|sucede|ocurre)/i,
+    /dónde está/i,
+    /cuál es (?:el|la) (?:último|última|actual)/i,
+    /hay alguna/i,
+    /existe algún/i,
+    /se (?:anunció|lanzó|publicó)/i,
+    /cuándo (?:es|será|fue)/i
   ];
   
   // Detectar si necesita noticias/info actual
-  const needsNews = newsKeywords.some(keyword => lowerMsg.includes(keyword));
+  const needsNews = newsKeywords.some(keyword => lowerMsg.includes(keyword)) ||
+                    implicitCurrentPatterns.some(pattern => pattern.test(lowerMsg));
   
   // Patrones de búsqueda explícita
   const searchPatterns = [
