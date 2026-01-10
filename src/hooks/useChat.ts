@@ -275,16 +275,24 @@ export function useChat(options?: UseChatOptions) {
           if (newsData.articles && newsData.articles.length > 0) {
             webContext = "\n\n📰 NOTICIAS DE FUENTES CONFIABLES:\n";
             webContext += `🕐 Actualizado: ${new Date().toLocaleString('es-CO')}\n`;
-            webContext += `📡 Fuentes: Reuters, AP, BBC, CNN, El País, The Guardian\n\n`;
+            webContext += `📡 Fuentes verificadas\n\n`;
             
             newsData.articles.forEach((article: any, i: number) => {
               webContext += `**${i + 1}. ${article.title}**\n`;
               webContext += `   📌 Fuente: ${article.source.name}\n`;
               webContext += `   📝 ${article.description}\n`;
-              webContext += `   🔗 ${article.url}\n\n`;
+              webContext += `   🔗 Link: ${article.url}\n`;
+              if (article.image) {
+                webContext += `   🖼️ Imagen: ${article.image}\n`;
+              }
+              webContext += `\n`;
             });
             
-            webContext += "\n⚠️ IMPORTANTE: Presenta estas noticias con titulares claros, menciona la fuente de cada noticia y proporciona los links.";
+            webContext += "\n⚠️ INSTRUCCIONES CRÍTICAS PARA MOSTRAR NOTICIAS:\n";
+            webContext += "1. INCLUYE SIEMPRE las imágenes usando el formato: ![Descripción](URL_IMAGEN)\n";
+            webContext += "2. INCLUYE SIEMPRE los links como enlaces clickeables: [Ver más](URL)\n";
+            webContext += "3. Formato para cada noticia: imagen, título, fuente, descripción, link\n";
+            webContext += "4. Usa markdown para que los links e imágenes sean interactivos\n";
           }
         } else if (newsResp.status === 401) {
           console.log("News fetch requires authentication");

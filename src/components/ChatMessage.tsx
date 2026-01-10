@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { User, Download, FileText, FileSpreadsheet } from "lucide-react";
+import { User, Download, FileText, FileSpreadsheet, ExternalLink } from "lucide-react";
 import medussaLogo from "@/assets/medussa-logo.png";
 import { Button } from "@/components/ui/button";
 import { useCallback, useMemo } from "react";
@@ -13,6 +13,102 @@ interface ChatMessageProps {
   content: string;
   imageUrl?: string;
   isStreaming?: boolean;
+}
+
+// Parse markdown images and links
+function parseMarkdownContent(content: string) {
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  
+  // Regex para imágenes markdown: ![alt](url)
+  const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  // Regex para links markdown: [text](url)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  
+  // Primero extraer todas las imágenes y links con sus posiciones
+  const matches: { type: 'image' | 'link'; match: RegExpMatchArray; start: number; end: number }[] = [];
+  
+  let imageMatch;
+  while ((imageMatch = imageRegex.exec(content)) !== null) {
+    matches.push({
+      type: 'image',
+      match: imageMatch,
+      start: imageMatch.index,
+      end: imageMatch.index + imageMatch[0].length
+    });
+  }
+  
+  let linkMatch;
+  while ((linkMatch = linkRegex.exec(content)) !== null) {
+    // Verificar que no sea parte de una imagen (no empiece con !)
+    const charBefore = content[linkMatch.index - 1];
+    if (charBefore !== '!') {
+      matches.push({
+        type: 'link',
+        match: linkMatch,
+        start: linkMatch.index,
+        end: linkMatch.index + linkMatch[0].length
+      });
+    }
+  }
+  
+  // Ordenar por posición
+  matches.sort((a, b) => a.start - b.start);
+  
+  // Construir elementos
+  matches.forEach((item, idx) => {
+    // Añadir texto antes del match
+    if (item.start > lastIndex) {
+      elements.push(
+        <span key={`text-${idx}`}>{content.slice(lastIndex, item.start)}</span>
+      );
+    }
+    
+    if (item.type === 'image') {
+      const alt = item.match[1];
+      const url = item.match[2];
+      elements.push(
+        <div key={`img-${idx}`} className="my-3">
+          <img 
+            src={url} 
+            alt={alt || 'Imagen de noticia'}
+            className="max-w-full rounded-lg border border-border/50 shadow-md"
+            style={{ maxHeight: '300px' }}
+            onError={(e) => {
+              // Ocultar imagen si falla la carga
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        </div>
+      );
+    } else {
+      const text = item.match[1];
+      const url = item.match[2];
+      elements.push(
+        <a 
+          key={`link-${idx}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
+        >
+          {text}
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      );
+    }
+    
+    lastIndex = item.end;
+  });
+  
+  // Añadir texto restante
+  if (lastIndex < content.length) {
+    elements.push(
+      <span key="text-final">{content.slice(lastIndex)}</span>
+    );
+  }
+  
+  return elements.length > 0 ? elements : content;
 }
 
 export function ChatMessage({ role, content, imageUrl, isStreaming = false }: ChatMessageProps) {
@@ -236,7 +332,9 @@ export function ChatMessage({ role, content, imageUrl, isStreaming = false }: Ch
           {isUser ? "Tú" : "Medussa IA"}
         </p>
         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-          {isUser ? content : (isStreaming ? displayedText : content)}
+          {isUser ? content : (
+            isStreaming ? displayedText : parseMarkdownContent(content)
+          )}
           {(isStreaming || isTyping) && !isUser && (
             <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse rounded-sm" />
           )}
