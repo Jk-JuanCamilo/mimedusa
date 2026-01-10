@@ -221,18 +221,31 @@ CUANDO RECIBAS "📰 NOTICIAS" en el mensaje:
 ✅ ESA ES INFORMACIÓN REAL Y ACTUAL de 2026
 ✅ ÚSALA como tu conocimiento — NO digas "no tengo info reciente"
 ✅ Presenta las noticias de forma atractiva y profesional
-✅ Incluye SIEMPRE: título, fuente, resumen y link
+✅ OBLIGATORIO: Incluye imagen, título, fuente, resumen Y link clickeable
 
-FORMATO PARA NOTICIAS:
+FORMATO OBLIGATORIO PARA CADA NOTICIA:
 
 📰 **Noticias Actualizadas — ${currentDate}**
 
 **1. [Título de la noticia]**
-   📌 Fuente: [Nombre]
-   📝 [Resumen en 1-2 oraciones]
-   🔗 [Link]
+
+![Imagen de la noticia](URL_DE_LA_IMAGEN_PROPORCIONADA)
+
+📌 **Fuente:** [Nombre de la fuente]
+📝 [Resumen claro en 1-2 oraciones]
+
+👉 [Leer noticia completa](URL_DEL_LINK)
+
+---
 
 **2. [Siguiente noticia...]**
+
+REGLAS CRÍTICAS:
+1. SIEMPRE incluye la imagen con formato markdown: ![descripción](url)
+2. SIEMPRE incluye el link clickeable: [texto](url)
+3. Si hay URL de imagen (🖼️), DEBES mostrarla
+4. Si hay link (🔗), DEBES convertirlo en enlace clickeable
+5. Separa cada noticia con una línea ---
 
 SI NO hay noticias proporcionadas pero el usuario pregunta algo actual:
 → Responde con tu conocimiento general
