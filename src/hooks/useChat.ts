@@ -250,14 +250,8 @@ export function useChat(options?: UseChatOptions) {
     const webAction = detectWebSearch(input);
     let webContext = "";
     
-    // Función auxiliar para obtener noticias de fuentes confiables
+    // Función auxiliar para obtener noticias de fuentes confiables (sin autenticación requerida)
     const fetchNews = async (query: string) => {
-      const { data: { session: newsSession } } = await supabase.auth.getSession();
-      if (!newsSession?.access_token) {
-        console.log("News fetch requires authentication");
-        return;
-      }
-      
       try {
         setMessages(prev => [...prev, { role: "assistant", content: "📰 Buscando noticias de fuentes confiables..." }]);
         
@@ -265,7 +259,6 @@ export function useChat(options?: UseChatOptions) {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
-            Authorization: `Bearer ${newsSession.access_token}`,
           },
           body: JSON.stringify({ query, limit: 8 }),
         });
@@ -294,8 +287,8 @@ export function useChat(options?: UseChatOptions) {
             webContext += "3. Formato para cada noticia: imagen, título, fuente, descripción, link\n";
             webContext += "4. Usa markdown para que los links e imágenes sean interactivos\n";
           }
-        } else if (newsResp.status === 401) {
-          console.log("News fetch requires authentication");
+        } else {
+          console.error("News fetch error:", newsResp.status);
         }
         setMessages(prev => prev.slice(0, -1));
       } catch (e) {
