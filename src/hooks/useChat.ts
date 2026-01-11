@@ -46,10 +46,25 @@ function detectWebSearch(message: string): { type: 'search' | 'scrape' | 'news' 
     'sabías que', 'sabias que', 'es cierto que', 'es verdad que',
     // Entretenimiento
     'celebridad', 'famoso', 'actor', 'actriz', 'cantante', 'película', 'pelicula', 'serie',
-    // Política y sociedad  
-    'presidente', 'congreso', 'ley', 'protesta', 'manifestación', 'manifestacion',
-    // Colombia específico
+    // LÍDERES POLÍTICOS Y GOBIERNO - MUY AMPLIADO
+    'presidente', 'presidenta', 'alcalde', 'alcaldesa', 'gobernador', 'gobernadora',
+    'ministro', 'ministra', 'senador', 'senadora', 'diputado', 'diputada',
+    'primer ministro', 'primera ministra', 'canciller', 'secretario de estado',
+    'congreso', 'parlamento', 'senado', 'cámara', 'gobierno de', 'gabinete',
+    'ley', 'protesta', 'manifestación', 'manifestacion', 'decreto', 'reforma',
+    'quién gobierna', 'quien gobierna', 'quién manda', 'quien manda',
+    'líder de', 'lider de', 'jefe de estado', 'jefe de gobierno',
+    // Países y capitales (para consultas de líderes)
+    'estados unidos', 'eeuu', 'usa', 'méxico', 'mexico', 'argentina', 'brasil', 'chile',
+    'perú', 'peru', 'venezuela', 'ecuador', 'bolivia', 'uruguay', 'paraguay',
+    'españa', 'espana', 'francia', 'alemania', 'italia', 'reino unido', 'rusia', 'china',
+    'japón', 'japon', 'india', 'canadá', 'canada', 'australia',
+    // Colombia específico - ciudades y departamentos
     'colombia', 'bogotá', 'bogota', 'medellín', 'medellin', 'cali', 'barranquilla',
+    'cartagena', 'bucaramanga', 'pereira', 'manizales', 'santa marta', 'cúcuta', 'cucuta',
+    'ibagué', 'ibague', 'villavicencio', 'pasto', 'montería', 'monteria', 'neiva',
+    'antioquia', 'valle del cauca', 'cundinamarca', 'atlántico', 'atlantico', 'santander',
+    'jamundí', 'jamundi', 'palmira', 'tuluá', 'tulua', 'buenaventura', 'buga',
     // Información actualizada 2026
     'hoy', 'ahora', 'actual', 'actualizado', 'este año', '2026', '2025',
     'últimamente', 'recientemente', 'en este momento', 'actualmente',
@@ -62,22 +77,42 @@ function detectWebSearch(message: string): { type: 'search' | 'scrape' | 'news' 
     'clima', 'tiempo', 'pronóstico', 'pronostico', 'temperatura', 'lluvia',
     // Eventos globales
     'g20', 'onu', 'otan', 'cumbre', 'tratado', 'acuerdo', 'sanción',
-    // Personas famosas (buscar información actualizada)
-    'elon musk', 'trump', 'biden', 'petro', 'milei', 'lula', 'maduro'
+    // Personas famosas y líderes mundiales (buscar información actualizada)
+    'elon musk', 'trump', 'biden', 'petro', 'milei', 'lula', 'maduro', 'boric',
+    'amlo', 'sheinbaum', 'xi jinping', 'putin', 'zelensky', 'macron', 'scholz',
+    'sunak', 'modi', 'trudeau', 'netanyahu', 'el papa', 'francisco'
   ];
   
   // Preguntas que implícitamente necesitan información actual
   const implicitCurrentPatterns = [
-    /quién es el (?:presidente|líder|ceo|director)/i,
+    // Líderes políticos
+    /quién es el (?:presidente|presidenta|alcalde|alcaldesa|gobernador|gobernadora|ministro|ministra|líder|lider|ceo|director)/i,
+    /quien es el (?:presidente|presidenta|alcalde|alcaldesa|gobernador|gobernadora|ministro|ministra|líder|lider|ceo|director)/i,
+    /quién es la (?:presidente|presidenta|alcalde|alcaldesa|gobernador|gobernadora|ministra|líder|lider|directora)/i,
+    /quien es la (?:presidente|presidenta|alcalde|alcaldesa|gobernador|gobernadora|ministra|líder|lider|directora)/i,
+    /quiénes son los (?:presidentes|alcaldes|gobernadores|ministros|líderes|lideres)/i,
+    /quienes son los (?:presidentes|alcaldes|gobernadores|ministros|líderes|lideres)/i,
+    /alcalde de/i,
+    /presidente de/i,
+    /gobernador de/i,
+    /gobierno de/i,
+    /gobierna (?:en|a)/i,
+    // Preguntas generales de actualidad
     /cuánto (?:está|vale|cuesta)/i,
+    /cuanto (?:está|vale|cuesta)/i,
     /cómo está (?:el|la)/i,
+    /como está (?:el|la)/i,
     /qué (?:pasó|pasa|sucede|ocurre)/i,
+    /que (?:pasó|pasa|sucede|ocurre)/i,
     /dónde está/i,
+    /donde está/i,
     /cuál es (?:el|la) (?:último|última|actual)/i,
+    /cual es (?:el|la) (?:último|última|actual)/i,
     /hay alguna/i,
     /existe algún/i,
     /se (?:anunció|lanzó|publicó)/i,
-    /cuándo (?:es|será|fue)/i
+    /cuándo (?:es|será|fue)/i,
+    /cuando (?:es|será|fue)/i
   ];
   
   // Detectar si necesita noticias/info actual
