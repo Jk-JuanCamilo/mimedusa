@@ -131,13 +131,14 @@ Deno.serve(async (req) => {
     if (allResults.length === 0) {
       console.log('No se encontraron resultados para:', ciudadLimpia);
       
+      // Devolver 200 para que el cliente no lo trate como error de ejecución.
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: `No se encontró información del alcalde de "${ciudad}" en Wikidata`,
           sugerencia: 'La ciudad puede no estar registrada o no tener información actualizada en Wikidata. Intenta con el nombre oficial completo.'
         }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
