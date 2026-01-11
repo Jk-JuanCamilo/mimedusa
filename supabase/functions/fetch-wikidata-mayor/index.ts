@@ -28,38 +28,18 @@ Deno.serve(async (req) => {
 
     console.log('Buscando alcalde de:', ciudad);
 
-    // Query SPARQL para Wikidata
-    // Busca el jefe de gobierno (alcalde) de una ciudad
+    // Query SPARQL simplificada para Wikidata - busca ciudades y su jefe de gobierno
     const sparqlQuery = `
-      SELECT ?alcalde ?alcaldeLabel ?ciudad ?ciudadLabel ?pais ?paisLabel ?fechaInicio ?imagen WHERE {
-        # Buscar ciudad por nombre en español, inglés o etiqueta
-        ?ciudad rdfs:label ?ciudadLabel .
-        FILTER(LANG(?ciudadLabel) = "es" || LANG(?ciudadLabel) = "en")
-        FILTER(CONTAINS(LCASE(?ciudadLabel), LCASE("${ciudad.replace(/"/g, '\\"')}")))
-        
-        # La ciudad debe ser una ciudad, municipio, capital, etc.
-        ?ciudad wdt:P31/wdt:P279* ?tipoEntidad .
-        VALUES ?tipoEntidad { wd:Q515 wd:Q1549591 wd:Q5119 wd:Q486972 wd:Q3957 wd:Q262166 }
-        
-        # Obtener el jefe de gobierno actual (alcalde)
-        ?ciudad p:P6 ?declaracion .
-        ?declaracion ps:P6 ?alcalde .
-        
-        # Filtrar solo alcaldes actuales (sin fecha de fin)
-        FILTER NOT EXISTS { ?declaracion pq:P582 ?fechaFin }
-        
-        # Obtener fecha de inicio si existe
-        OPTIONAL { ?declaracion pq:P580 ?fechaInicio }
-        
-        # Obtener país
+      SELECT ?alcalde ?alcaldeLabel ?ciudad ?ciudadLabel ?pais ?paisLabel WHERE {
+        ?ciudad wdt:P31/wdt:P279* wd:Q515 .
+        ?ciudad rdfs:label ?nombre .
+        FILTER(LANG(?nombre) = "es")
+        FILTER(LCASE(?nombre) = LCASE("${ciudad.replace(/"/g, '\\"').trim()}"))
+        ?ciudad wdt:P6 ?alcalde .
         OPTIONAL { ?ciudad wdt:P17 ?pais }
-        
-        # Obtener imagen del alcalde si existe
-        OPTIONAL { ?alcalde wdt:P18 ?imagen }
-        
         SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en" }
       }
-      LIMIT 5
+      LIMIT 3
     `;
 
     const wikidataUrl = `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparqlQuery)}&format=json`;
@@ -92,13 +72,13 @@ Deno.serve(async (req) => {
     console.log('Wikidata results:', bindings.length);
 
     if (bindings.length === 0) {
-      // Intentar búsqueda alternativa más simple
+      // Intentar búsqueda con CONTAINS para coincidencias parciales
       const simpleQuery = `
         SELECT ?alcalde ?alcaldeLabel ?ciudad ?ciudadLabel ?pais ?paisLabel WHERE {
-          ?ciudad wdt:P31/wdt:P279* wd:Q515 .
+          ?ciudad wdt:P31 wd:Q515 .
           ?ciudad rdfs:label ?ciudadLabel .
           FILTER(LANG(?ciudadLabel) = "es")
-          FILTER(CONTAINS(LCASE(?ciudadLabel), LCASE("${ciudad.replace(/"/g, '\\"')}")))
+          FILTER(CONTAINS(LCASE(?ciudadLabel), LCASE("${ciudad.replace(/"/g, '\\"').trim()}")))
           ?ciudad wdt:P6 ?alcalde .
           OPTIONAL { ?ciudad wdt:P17 ?pais }
           SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en" }
