@@ -19,7 +19,38 @@ const IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-im
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/firecrawl-search`;
 const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/firecrawl-scrape`;
 const NEWS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-news`;
+const WIKIDATA_MAYOR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-wikidata-mayor`;
 const USER_NAME_KEY = "medussa_user_name";
+
+// Detecta si el usuario pregunta por un alcalde específico
+function detectMayorQuery(message: string): { isMayorQuery: boolean; ciudad: string } {
+  const lowerMsg = message.toLowerCase();
+  
+  // Patrones para detectar preguntas de alcaldes
+  const mayorPatterns = [
+    /(?:quién|quien|cuál|cual|como se llama el|dime el|alcalde de)\s+(?:es\s+)?(?:el\s+)?(?:alcalde|alcaldesa)\s+(?:de\s+)?(.+)/i,
+    /(?:alcalde|alcaldesa)\s+(?:de|actual de|actualmente de)\s+(.+)/i,
+    /(?:quién|quien)\s+(?:es\s+)?(?:el|la)\s+(?:alcalde|alcaldesa)\s+(?:de\s+)?(.+)/i,
+    /(?:alcalde|alcaldesa)\s+(.+)/i,
+  ];
+  
+  for (const pattern of mayorPatterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      // Limpiar el nombre de la ciudad
+      const ciudad = match[1]
+        .replace(/[¿?¡!,;:.]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (ciudad.length > 1) {
+        return { isMayorQuery: true, ciudad };
+      }
+    }
+  }
+  
+  return { isMayorQuery: false, ciudad: '' };
+}
 
 // Detecta si el usuario quiere buscar en internet o necesita info actualizada
 function detectWebSearch(message: string): { type: 'search' | 'scrape' | 'news' | null; query: string } {
@@ -283,6 +314,7 @@ export function useChat(options?: UseChatOptions) {
 
     // Detectar si el usuario quiere buscar en internet o analizar una URL
     const webAction = detectWebSearch(input);
+    const mayorQuery = detectMayorQuery(input);
     let webContext = "";
     
     // Función auxiliar para obtener noticias de fuentes confiables (sin autenticación requerida)
@@ -332,6 +364,64 @@ export function useChat(options?: UseChatOptions) {
       }
     };
 
+    // Función auxiliar para obtener alcalde desde Wikidata
+    const fetchMayorFromWikidata = async (ciudad: string) => {
+      try {
+        setMessages(prev => [...prev, { role: "assistant", content: `🏛️ Consultando Wikidata para información del alcalde de ${ciudad}...` }]);
+        
+        const wikidataResp = await fetch(WIKIDATA_MAYOR_URL, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ciudad }),
+        });
+        
+        if (wikidataResp.ok) {
+          const wikidataData = await wikidataResp.json();
+          if (wikidataData.success && wikidataData.results && wikidataData.results.length > 0) {
+            webContext = "\n\n🏛️ INFORMACIÓN DE WIKIDATA (Base de datos estructurada):\n";
+            webContext += `🕐 Consultado: ${new Date().toLocaleString('es-CO')}\n`;
+            webContext += `📚 Fuente: Wikidata (base de conocimiento de Wikipedia)\n\n`;
+            
+            wikidataData.results.forEach((result: any, i: number) => {
+              webContext += `**Alcalde encontrado:**\n`;
+              webContext += `   👤 **Nombre:** ${result.alcalde}\n`;
+              webContext += `   🏙️ **Ciudad:** ${result.ciudad}\n`;
+              if (result.pais) {
+                webContext += `   🌍 **País:** ${result.pais}\n`;
+              }
+              if (result.fechaInicio) {
+                webContext += `   📅 **Desde:** ${result.fechaInicio}\n`;
+              }
+              if (result.imagen) {
+                webContext += `   🖼️ **Imagen:** ${result.imagen}\n`;
+              }
+              webContext += `\n`;
+            });
+            
+            webContext += "\n⚠️ INSTRUCCIONES PARA RESPONDER:\n";
+            webContext += "1. Presenta la información de manera clara y estructurada\n";
+            webContext += "2. Indica que la fuente es Wikidata\n";
+            webContext += "3. Si hay imagen, muéstrala con formato markdown: ![Alcalde](URL)\n";
+            webContext += "4. Menciona que la información puede no estar 100% actualizada\n";
+          } else if (wikidataData.error) {
+            webContext = `\n\n⚠️ No se encontró información del alcalde de "${ciudad}" en Wikidata.\n`;
+            webContext += "Esto puede significar que:\n";
+            webContext += "- La ciudad no está registrada en Wikidata con ese nombre\n";
+            webContext += "- La información del alcalde actual no ha sido actualizada\n";
+            webContext += "- El nombre de la ciudad puede estar escrito diferente\n";
+          }
+        } else {
+          console.error("Wikidata fetch error:", wikidataResp.status);
+        }
+        setMessages(prev => prev.slice(0, -1));
+      } catch (e) {
+        console.error("Wikidata fetch error:", e);
+        setMessages(prev => prev.slice(0, -1));
+      }
+    };
+
     // Función auxiliar para búsqueda web (requiere autenticación)
     const performWebSearch = async (query: string) => {
       const { data: { session: searchSession } } = await supabase.auth.getSession();
@@ -377,7 +467,10 @@ export function useChat(options?: UseChatOptions) {
       }
     };
     
-    if (webAction.type === 'search') {
+    // Prioridad: primero consultar Wikidata si es pregunta de alcalde
+    if (mayorQuery.isMayorQuery) {
+      await fetchMayorFromWikidata(mayorQuery.ciudad);
+    } else if (webAction.type === 'search') {
       await performWebSearch(webAction.query);
     } else if (webAction.type === 'news') {
       await fetchNews(webAction.query);
