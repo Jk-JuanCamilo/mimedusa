@@ -26,22 +26,41 @@ const USER_NAME_KEY = "medussa_user_name";
 function detectMayorQuery(message: string): { isMayorQuery: boolean; ciudad: string } {
   const lowerMsg = message.toLowerCase();
   
-  // Patrones para detectar preguntas de alcaldes
+  // Palabras que indican fin del nombre de ciudad
+  const stopWords = ['quien', 'quién', 'es', 'cual', 'cuál', 'como', 'cómo', 'dime', 'por favor', 'actual', 'actualmente'];
+  
+  // Patrones para detectar preguntas de alcaldes - ordenados de más específico a menos
   const mayorPatterns = [
-    /(?:quién|quien|cuál|cual|como se llama el|dime el|alcalde de)\s+(?:es\s+)?(?:el\s+)?(?:alcalde|alcaldesa)\s+(?:de\s+)?(.+)/i,
-    /(?:alcalde|alcaldesa)\s+(?:de|actual de|actualmente de)\s+(.+)/i,
-    /(?:quién|quien)\s+(?:es\s+)?(?:el|la)\s+(?:alcalde|alcaldesa)\s+(?:de\s+)?(.+)/i,
-    /(?:alcalde|alcaldesa)\s+(.+)/i,
+    // "alcalde de medellín" o "alcalde de la ciudad de medellín"
+    /(?:alcalde|alcaldesa)\s+(?:de\s+)?(?:la\s+ciudad\s+de\s+)?([a-záéíóúñü\s]+)/i,
+    // "quién es el alcalde de medellín"
+    /(?:quién|quien)\s+es\s+(?:el|la)\s+(?:alcalde|alcaldesa)\s+(?:de\s+)?([a-záéíóúñü\s]+)/i,
+    // "el alcalde de medellín quién es"
+    /(?:el|la)\s+(?:alcalde|alcaldesa)\s+(?:de\s+)?([a-záéíóúñü\s]+)/i,
   ];
   
   for (const pattern of mayorPatterns) {
     const match = message.match(pattern);
     if (match && match[1]) {
-      // Limpiar el nombre de la ciudad
-      const ciudad = match[1]
+      // Limpiar el nombre de la ciudad - remover palabras de parada al final
+      let ciudad = match[1]
         .replace(/[¿?¡!,;:.]/g, '')
         .replace(/\s+/g, ' ')
-        .trim();
+        .trim()
+        .toLowerCase();
+      
+      // Remover palabras de parada del final
+      for (const stopWord of stopWords) {
+        if (ciudad.endsWith(' ' + stopWord)) {
+          ciudad = ciudad.slice(0, -(stopWord.length + 1)).trim();
+        }
+        if (ciudad.startsWith(stopWord + ' ')) {
+          ciudad = ciudad.slice(stopWord.length + 1).trim();
+        }
+      }
+      
+      // Capitalizar primera letra
+      ciudad = ciudad.charAt(0).toUpperCase() + ciudad.slice(1);
       
       if (ciudad.length > 1) {
         return { isMayorQuery: true, ciudad };
