@@ -42,8 +42,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Construir URL de GNews
-    const searchQuery = query || 'últimas noticias';
+    // Limpiar query para GNews - remover caracteres especiales que no soporta
+    const cleanQuery = (query || 'últimas noticias')
+      .replace(/[¿?¡!,;:()"\[\]{}]/g, ' ')  // Remover caracteres especiales
+      .replace(/\s+/g, ' ')                   // Colapsar espacios múltiples
+      .trim()
+      .slice(0, 100);                         // Limitar longitud
+    
+    const searchQuery = cleanQuery || 'noticias';
     const maxResults = Math.min(limit, 10);
     
     const gnewsUrl = `https://gnews.io/api/v4/search?q=${encodeURIComponent(searchQuery)}&lang=es&country=co&max=${maxResults}&apikey=${apiKey}`;
