@@ -239,7 +239,7 @@ export function useChat(options?: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingStats, setStreamingStats] = useState<StreamingStats | null>(null);
-  const [selectedModel, setSelectedModel] = useState("google/gemini-3-flash-preview");
+  const [selectedModel, setSelectedModel] = useState("google/gemini-2.5-flash-lite");
   const [userName, setUserName] = useState<string | null>(() => {
     return localStorage.getItem(USER_NAME_KEY);
   });
