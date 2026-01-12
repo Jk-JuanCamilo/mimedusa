@@ -140,17 +140,18 @@ serve(async (req) => {
     }
 
     // Validate model parameter - use vision-capable model if image is present
-    let selectedModel = model || "google/gemini-2.5-flash-lite";
-    
+    const requestedModel = typeof model === "string" ? model.trim() : "";
+    let selectedModel = requestedModel || "google/gemini-2.5-flash-lite";
+
     // Force vision-capable model if there's an image
     if (hasImage) {
       // Use Gemini Flash which supports vision
       selectedModel = "google/gemini-2.5-flash";
       console.log("Image detected, switching to vision model:", selectedModel);
     }
-    
+
     if (!ALLOWED_MODELS.includes(selectedModel)) {
-      console.error("Invalid model requested:", model);
+      console.error("Invalid model requested:", { model, selectedModel, allowed: ALLOWED_MODELS });
       return new Response(JSON.stringify({ error: "Modelo no permitido" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
