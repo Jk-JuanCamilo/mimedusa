@@ -12,9 +12,11 @@ const ALLOWED_MODELS = [
   "google/gemini-2.5-flash",
   "google/gemini-2.5-pro",
   "google/gemini-3-pro-preview",
+  "google/gemini-3-flash-preview",
   "openai/gpt-5",
   "openai/gpt-5-mini",
   "openai/gpt-5-nano",
+  "openai/gpt-5.2",
 ];
 
 const MAX_MESSAGE_LENGTH = 10000; // Max characters per message
