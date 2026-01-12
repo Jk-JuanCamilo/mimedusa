@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserPreferences } from "./useUserPreferences";
 
 export interface Message {
   role: "user" | "assistant";
@@ -243,6 +244,9 @@ export function useChat(options?: UseChatOptions) {
   const [userName, setUserName] = useState<string | null>(() => {
     return localStorage.getItem(USER_NAME_KEY);
   });
+  
+  // Hook de preferencias de usuario para memoria y personalización
+  const { updateFromMessage, getPreferencesContext, mainInterests } = useUserPreferences();
   
   // Guardar nombre en localStorage cuando cambie
   useEffect(() => {
@@ -556,8 +560,15 @@ export function useChat(options?: UseChatOptions) {
     };
 
     try {
-      // Agregar contexto web si existe
-      const userContent = webContext ? `${input}\n${webContext}` : input;
+      // Actualizar preferencias basándose en el mensaje
+      updateFromMessage(input);
+      
+      // Agregar contexto web y preferencias del usuario si existen
+      const preferencesContext = getPreferencesContext();
+      const userContent = webContext || preferencesContext 
+        ? `${input}${webContext}${preferencesContext}` 
+        : input;
+      
       // Preparar mensajes con imágenes si las hay
       const messagesForApi = [...messages, { ...userMsg, content: userContent }].map(msg => {
         if (msg.imageUrl) {
@@ -586,7 +597,8 @@ export function useChat(options?: UseChatOptions) {
           messages: messagesForApi,
           model: model || selectedModel,
           userName: userName,
-          hasImage: !!imageData
+          hasImage: !!imageData,
+          userInterests: mainInterests
         }),
       });
 
@@ -688,6 +700,7 @@ export function useChat(options?: UseChatOptions) {
     setMessages: setMessagesExternal,
     userName,
     setUserName,
-    streamingStats
+    streamingStats,
+    mainInterests
   };
 }

@@ -74,7 +74,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, model, userName, hasImage } = body;
+    const { messages, model, userName, hasImage, userInterests } = body;
 
     // Validate messages array
     if (!Array.isArray(messages)) {
@@ -186,10 +186,16 @@ serve(async (req) => {
     console.log("Processing chat request with", messages.length, "messages using model:", selectedModel);
     console.log("Current date/time:", currentDate, currentTime);
     console.log("User name:", userName || "not provided");
+    console.log("User interests:", userInterests || "none");
     
     // Construir instrucción personalizada si hay nombre
     const nameInstruction = userName 
       ? `\nNOMBRE DEL USUARIO: ${userName}\n- Recuerda que estás hablando con ${userName} durante toda la conversación\n- NO uses su nombre en cada respuesta - solo ocasionalmente (cada 3-4 respuestas) para que sea natural\n- Cuando lo uses, hazlo de forma cálida y genuina, no forzada`
+      : "";
+    
+    // Construir instrucción de intereses si existen
+    const interestsInstruction = userInterests && Array.isArray(userInterests) && userInterests.length > 0
+      ? `\n\n🧠 INTERESES DEL USUARIO:\n${userInterests.map((i: string) => `- ${i}`).join('\n')}\n\nUsa esta información para:\n- Priorizar ejemplos relacionados con sus intereses\n- Conectar respuestas con temas que le importan\n- Hacer la conversación más relevante y personal`
       : "";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -256,6 +262,7 @@ PARA CONSULTAS DE LÍDERES MUNDIALES, presenta la información así:
 AÑO ACTUAL: 2026 (ESTAMOS EN 2026)
 FECHA EXACTA: ${currentDate}, ${currentTime} (Colombia)
 ${nameInstruction ? `👤 USUARIO: ${userName}` : ''}
+${interestsInstruction}
 
 Tienes acceso a información actualizada de 2026 cuando te proporcionan datos de noticias (📰 NOTICIAS).
 SIEMPRE usa esa información como si fuera tu conocimiento actual.
