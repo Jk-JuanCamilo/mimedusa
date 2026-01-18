@@ -11,6 +11,8 @@ import { useChat } from "@/hooks/useChat";
 import { useConversations } from "@/hooks/useConversations";
 import { Trash2, History, Plus, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 // Lazy load non-critical visual components with deferred loading
 const CircuitBackground = lazy(() => import("@/components/CircuitBackground").then(m => ({
@@ -88,29 +90,12 @@ const Index = () => {
     conversationIdRef.current = currentConversationId;
   }, [currentConversationId]);
 
-  // Check auth state
+  // Check auth state from Firebase
   useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: {
-          user: authUser
-        }
-      } = await supabase.auth.getUser();
-      setUser(authUser ? {
-        id: authUser.id
-      } : null);
-    };
-    checkAuth();
-    const {
-      data: {
-        subscription
-      }
-    } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ? {
-        id: session.user.id
-      } : null);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser ? { id: firebaseUser.uid } : null);
     });
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   // Auto-scroll siempre que hay nuevos mensajes o el asistente está escribiendo
