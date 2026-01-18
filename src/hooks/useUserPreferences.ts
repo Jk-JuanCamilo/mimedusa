@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export interface UserPreferences {
   id: string;
@@ -35,122 +37,113 @@ function detectTopics(message: string): string[] {
     }
   }
   
-  return [...new Set(detectedTopics)]; // Eliminar duplicados
+  return [...new Set(detectedTopics)];
 }
 
 export function useUserPreferences() {
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
 
-  // Cargar preferencias al montar
+  // Listen to Firebase auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUid(user?.uid || null);
+      if (!user) {
+        setPreferences(null);
+        setIsLoading(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load preferences when user logs in
   useEffect(() => {
     const loadPreferences = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) {
+      if (!firebaseUid) {
         setIsLoading(false);
         return;
       }
       
-      setUserId(session.user.id);
-      
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error loading preferences:', error);
-      }
-      
-      if (data) {
-        setPreferences({
-          ...data,
-          interests: data.interests || [],
-          topics_count: (data.topics_count as Record<string, number>) || {},
-          last_topics: data.last_topics || []
+      try {
+        const { data, error } = await supabase.functions.invoke("user-preferences", {
+          body: { action: "get", firebaseUid }
         });
+        
+        if (error) {
+          console.error('Error loading preferences:', error);
+        }
+        
+        if (data?.data) {
+          setPreferences({
+            ...data.data,
+            interests: data.data.interests || [],
+            topics_count: (data.data.topics_count as Record<string, number>) || {},
+            last_topics: data.data.last_topics || []
+          });
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
     
-    loadPreferences();
-    
-    // Escuchar cambios de sesión
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user?.id) {
-        setUserId(session.user.id);
-        loadPreferences();
-      } else if (event === 'SIGNED_OUT') {
-        setUserId(null);
-        setPreferences(null);
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, []);
+    if (firebaseUid) {
+      loadPreferences();
+    }
+  }, [firebaseUid]);
 
-  // Actualizar preferencias basándose en un mensaje
+  // Update preferences based on a message
   const updateFromMessage = useCallback(async (message: string) => {
-    if (!userId) return;
+    if (!firebaseUid) return;
     
     const detectedTopics = detectTopics(message);
     if (detectedTopics.length === 0) return;
     
-    // Calcular nuevos conteos
+    // Calculate new counts
     const newTopicsCount = { ...(preferences?.topics_count || {}) };
     detectedTopics.forEach(topic => {
       newTopicsCount[topic] = (newTopicsCount[topic] || 0) + 1;
     });
     
-    // Calcular intereses principales (top 5 temas más frecuentes)
+    // Calculate main interests (top 5 most frequent topics)
     const sortedTopics = Object.entries(newTopicsCount)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([topic]) => topic);
     
-    // Últimos 10 temas consultados
+    // Last 10 topics consulted
     const lastTopics = [...detectedTopics, ...(preferences?.last_topics || [])]
       .slice(0, 10);
     
     try {
-      const updateData = {
-        interests: sortedTopics,
-        topics_count: newTopicsCount,
-        last_topics: lastTopics,
-      };
+      const { error } = await supabase.functions.invoke("user-preferences", {
+        body: {
+          action: "update",
+          firebaseUid,
+          interests: sortedTopics,
+          topicsCount: newTopicsCount,
+          lastTopics
+        }
+      });
       
-      if (preferences) {
-        // Actualizar existente
-        const { error } = await supabase
-          .from('user_preferences')
-          .update(updateData)
-          .eq('user_id', userId);
-        
-        if (error) throw error;
-      } else {
-        // Crear nuevo
-        const { error } = await supabase
-          .from('user_preferences')
-          .insert({ user_id: userId, ...updateData });
-        
-        if (error) throw error;
-      }
+      if (error) throw error;
       
       setPreferences(prev => ({
         id: prev?.id || '',
-        user_id: userId,
+        user_id: firebaseUid,
         preferred_language: prev?.preferred_language || 'es',
-        ...updateData,
+        interests: sortedTopics,
+        topics_count: newTopicsCount,
+        last_topics: lastTopics,
       }));
     } catch (error) {
       console.error('Error updating preferences:', error);
     }
-  }, [userId, preferences]);
+  }, [firebaseUid, preferences]);
 
-  // Obtener contexto de preferencias para el AI
+  // Get preferences context for AI
   const getPreferencesContext = useCallback((): string => {
     if (!preferences || !preferences.interests.length) return '';
     
