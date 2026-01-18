@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { toast } from "sonner";
 
 export interface Conversation {
@@ -22,34 +24,55 @@ export function useConversations() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
+
+  // Listen to Firebase auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUid(user?.uid || null);
+      if (!user) {
+        setConversations([]);
+        setCurrentConversationId(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const fetchConversations = useCallback(async () => {
+    if (!firebaseUid) return;
+    
     setIsLoadingConversations(true);
     try {
-      const { data, error } = await supabase
-        .from("conversations")
-        .select("*")
-        .order("updated_at", { ascending: false });
+      const { data, error } = await supabase.functions.invoke("user-conversations", {
+        body: { action: "list", firebaseUid }
+      });
 
       if (error) throw error;
-      setConversations(data || []);
+      setConversations(data?.data || []);
     } catch (error) {
       console.error("Error fetching conversations:", error);
     } finally {
       setIsLoadingConversations(false);
     }
-  }, []);
+  }, [firebaseUid]);
+
+  // Fetch conversations when user logs in
+  useEffect(() => {
+    if (firebaseUid) {
+      fetchConversations();
+    }
+  }, [firebaseUid, fetchConversations]);
 
   const loadConversationMessages = useCallback(async (conversationId: string) => {
+    if (!firebaseUid) return [];
+    
     try {
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
+      const { data, error } = await supabase.functions.invoke("user-conversations", {
+        body: { action: "getMessages", firebaseUid, conversationId }
+      });
 
       if (error) throw error;
-      return (data || []).map((m: DbMessage) => ({
+      return (data?.data || []).map((m: DbMessage) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
         imageUrl: m.image_url || undefined,
@@ -59,29 +82,30 @@ export function useConversations() {
       toast.error("Error al cargar los mensajes");
       return [];
     }
-  }, []);
+  }, [firebaseUid]);
 
   const createConversation = useCallback(async (title: string = "Nueva conversación") => {
+    if (!firebaseUid) return null;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from("conversations")
-        .insert({ user_id: user.id, title })
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke("user-conversations", {
+        body: { action: "create", firebaseUid, title }
+      });
 
       if (error) throw error;
-      setConversations(prev => [data, ...prev]);
-      setCurrentConversationId(data.id);
-      return data.id;
+      const newConv = data?.data;
+      if (newConv) {
+        setConversations(prev => [newConv, ...prev]);
+        setCurrentConversationId(newConv.id);
+        return newConv.id;
+      }
+      return null;
     } catch (error) {
       console.error("Error creating conversation:", error);
       toast.error("Error al crear conversación");
       return null;
     }
-  }, []);
+  }, [firebaseUid]);
 
   const saveMessage = useCallback(async (
     conversationId: string,
@@ -89,24 +113,18 @@ export function useConversations() {
     content: string,
     imageUrl?: string
   ) => {
+    if (!firebaseUid) return;
+    
     try {
-      const { error } = await supabase.from("messages").insert({
-        conversation_id: conversationId,
-        role,
-        content,
-        image_url: imageUrl || null,
+      const { error } = await supabase.functions.invoke("user-conversations", {
+        body: { action: "saveMessage", firebaseUid, conversationId, role, content, imageUrl }
       });
 
       if (error) throw error;
 
-      // Update conversation title if first user message
+      // Update local state for title if user message
       if (role === "user") {
         const title = content.slice(0, 50) + (content.length > 50 ? "..." : "");
-        await supabase
-          .from("conversations")
-          .update({ title, updated_at: new Date().toISOString() })
-          .eq("id", conversationId);
-        
         setConversations(prev => prev.map(c => 
           c.id === conversationId ? { ...c, title, updated_at: new Date().toISOString() } : c
         ));
@@ -114,14 +132,15 @@ export function useConversations() {
     } catch (error) {
       console.error("Error saving message:", error);
     }
-  }, []);
+  }, [firebaseUid]);
 
   const deleteConversation = useCallback(async (conversationId: string) => {
+    if (!firebaseUid) return;
+    
     try {
-      const { error } = await supabase
-        .from("conversations")
-        .delete()
-        .eq("id", conversationId);
+      const { error } = await supabase.functions.invoke("user-conversations", {
+        body: { action: "delete", firebaseUid, conversationId }
+      });
 
       if (error) throw error;
       setConversations(prev => prev.filter(c => c.id !== conversationId));
@@ -133,17 +152,15 @@ export function useConversations() {
       console.error("Error deleting conversation:", error);
       toast.error("Error al eliminar conversación");
     }
-  }, [currentConversationId]);
+  }, [firebaseUid, currentConversationId]);
 
   const deleteAllConversations = useCallback(async () => {
+    if (!firebaseUid) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase
-        .from("conversations")
-        .delete()
-        .eq("user_id", user.id);
+      const { error } = await supabase.functions.invoke("user-conversations", {
+        body: { action: "deleteAll", firebaseUid }
+      });
 
       if (error) throw error;
       setConversations([]);
@@ -153,27 +170,7 @@ export function useConversations() {
       console.error("Error deleting all conversations:", error);
       toast.error("Error al eliminar el historial");
     }
-  }, []);
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        fetchConversations();
-      }
-    };
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        fetchConversations();
-      } else {
-        setConversations([]);
-        setCurrentConversationId(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchConversations]);
+  }, [firebaseUid]);
 
   return {
     conversations,
