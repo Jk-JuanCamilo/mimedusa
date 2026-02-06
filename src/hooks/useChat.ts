@@ -356,26 +356,24 @@ export function useChat(options?: UseChatOptions) {
         if (newsResp.ok) {
           const newsData = await newsResp.json();
           if (newsData.articles && newsData.articles.length > 0) {
-            webContext = "\n\n📰 NOTICIAS DE FUENTES CONFIABLES:\n";
-            webContext += `🕐 Actualizado: ${new Date().toLocaleString('es-CO')}\n`;
-            webContext += `📡 Fuentes verificadas\n\n`;
+            webContext = "\n\n📰 NOTICIAS ACTUALIZADAS:\n\n";
             
             newsData.articles.forEach((article: any, i: number) => {
-              webContext += `**${i + 1}. ${article.title}**\n`;
-              webContext += `   📌 Fuente: ${article.source.name}\n`;
-              webContext += `   📝 ${article.description}\n`;
-              webContext += `   🔗 Link: ${article.url}\n`;
+              webContext += `---\n\n`;
+              webContext += `**${i + 1}. ${article.title}**\n\n`;
+              
+              // Incluir imagen en formato markdown directamente
               if (article.image) {
-                webContext += `   🖼️ Imagen: ${article.image}\n`;
+                webContext += `![Imagen de ${article.source.name}](${article.image})\n\n`;
               }
-              webContext += `\n`;
+              
+              webContext += `📌 Fuente: ${article.source.name}\n`;
+              webContext += `📝 ${article.description}\n\n`;
+              webContext += `[Leer más →](${article.url})\n\n`;
             });
             
-            webContext += "\n⚠️ INSTRUCCIONES CRÍTICAS PARA MOSTRAR NOTICIAS:\n";
-            webContext += "1. INCLUYE SIEMPRE las imágenes usando el formato: ![Descripción](URL_IMAGEN)\n";
-            webContext += "2. INCLUYE SIEMPRE los links como enlaces clickeables: [Ver más](URL)\n";
-            webContext += "3. Formato para cada noticia: imagen, título, fuente, descripción, link\n";
-            webContext += "4. Usa markdown para que los links e imágenes sean interactivos\n";
+            webContext += "---\n\n";
+            webContext += "⚠️ IMPORTANTE: Las imágenes YA están en formato markdown ![](url). INCLÚYELAS en tu respuesta exactamente como están.\n";
           }
         } else {
           console.error("News fetch error:", newsResp.status);
