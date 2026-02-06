@@ -15,7 +15,7 @@ interface ChatMessageProps {
   isStreaming?: boolean;
 }
 
-// Parse markdown images and links
+// Parse markdown images, links, and standalone image URLs
 function parseMarkdownContent(content: string) {
   const elements: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -24,9 +24,11 @@ function parseMarkdownContent(content: string) {
   const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
   // Regex para links markdown: [text](url)
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  // Regex para URLs de imágenes sueltas (no en markdown)
+  const standaloneImageRegex = /(?:^|\s|🖼️\s*(?:Imagen)?:?\s*)(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp|bmp|svg)(?:\?[^\s]*)?)/gi;
   
   // Primero extraer todas las imágenes y links con sus posiciones
-  const matches: { type: 'image' | 'link'; match: RegExpMatchArray; start: number; end: number }[] = [];
+  const matches: { type: 'image' | 'link' | 'standalone-image'; match: RegExpMatchArray; start: number; end: number; url?: string }[] = [];
   
   let imageMatch;
   while ((imageMatch = imageRegex.exec(content)) !== null) {
@@ -52,11 +54,46 @@ function parseMarkdownContent(content: string) {
     }
   }
   
+  // Buscar URLs de imágenes sueltas
+  let standaloneMatch;
+  while ((standaloneMatch = standaloneImageRegex.exec(content)) !== null) {
+    const fullMatch = standaloneMatch[0];
+    const url = standaloneMatch[1];
+    const startPos = standaloneMatch.index;
+    const endPos = startPos + fullMatch.length;
+    
+    // Verificar que no esté ya cubierta por un match de markdown image
+    const isAlreadyCovered = matches.some(m => 
+      (m.type === 'image' && startPos >= m.start && endPos <= m.end) ||
+      (m.type === 'link' && m.match[2] === url)
+    );
+    
+    if (!isAlreadyCovered) {
+      matches.push({
+        type: 'standalone-image',
+        match: standaloneMatch,
+        start: startPos,
+        end: endPos,
+        url: url
+      });
+    }
+  }
+  
   // Ordenar por posición
   matches.sort((a, b) => a.start - b.start);
   
+  // Filtrar solapamientos (mantener el primero)
+  const filteredMatches = matches.filter((item, idx) => {
+    for (let i = 0; i < idx; i++) {
+      if (item.start < matches[i].end && item.end > matches[i].start) {
+        return false;
+      }
+    }
+    return true;
+  });
+  
   // Construir elementos
-  matches.forEach((item, idx) => {
+  filteredMatches.forEach((item, idx) => {
     // Añadir texto antes del match
     if (item.start > lastIndex) {
       elements.push(
@@ -72,8 +109,26 @@ function parseMarkdownContent(content: string) {
           <img 
             src={url} 
             alt={alt || 'Imagen de noticia'}
-            className="max-w-full rounded-lg border border-border/50 shadow-md"
-            style={{ maxHeight: '300px' }}
+            className="max-w-full rounded-lg border border-border/50 shadow-md object-cover"
+            style={{ maxHeight: '400px', width: 'auto' }}
+            loading="lazy"
+            onError={(e) => {
+              // Ocultar imagen si falla la carga
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        </div>
+      );
+    } else if (item.type === 'standalone-image') {
+      const url = item.url || item.match[1];
+      elements.push(
+        <div key={`standalone-img-${idx}`} className="my-3">
+          <img 
+            src={url} 
+            alt="Imagen de noticia"
+            className="max-w-full rounded-lg border border-border/50 shadow-md object-cover"
+            style={{ maxHeight: '400px', width: 'auto' }}
+            loading="lazy"
             onError={(e) => {
               // Ocultar imagen si falla la carga
               (e.target as HTMLImageElement).style.display = 'none';

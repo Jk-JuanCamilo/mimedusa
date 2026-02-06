@@ -281,25 +281,31 @@ FORMATO OBLIGATORIO PARA CADA NOTICIA:
 
 📰 **Noticias Actualizadas — ${currentDate}**
 
+---
+
 **1. [Título de la noticia]**
 
-![Imagen de la noticia](URL_DE_LA_IMAGEN_PROPORCIONADA)
+![Imagen](URL_COMPLETA_DE_LA_IMAGEN)
 
-📌 **Fuente:** [Nombre de la fuente]
-📝 [Resumen claro en 1-2 oraciones]
+📌 Fuente: [Nombre]
+📝 [Resumen breve y objetivo]
 
-👉 [Leer noticia completa](URL_DEL_LINK)
+[Leer más →](URL_DEL_ARTICULO)
 
 ---
 
 **2. [Siguiente noticia...]**
 
-REGLAS CRÍTICAS:
-1. SIEMPRE incluye la imagen con formato markdown: ![descripción](url)
-2. SIEMPRE incluye el link clickeable: [texto](url)
-3. Si hay URL de imagen (🖼️), DEBES mostrarla
-4. Si hay link (🔗), DEBES convertirlo en enlace clickeable
-5. Separa cada noticia con una línea ---
+---
+
+INSTRUCCIONES ABSOLUTAMENTE OBLIGATORIAS:
+1. CADA noticia DEBE tener una imagen si 🖼️ está presente
+2. USA EXACTAMENTE este formato para imágenes: ![Imagen](URL_COMPLETA)
+3. NO escribas "🖼️ Imagen:" - usa ![Imagen](url) directamente
+4. Los links DEBEN ser clickeables: [texto](url)
+5. Las URLs de imagen terminan en .jpg, .png, .jpeg, .gif, .webp
+6. Copia las URLs de imagen EXACTAS sin modificarlas
+7. Separa cada noticia con ---
 
 SI NO hay noticias proporcionadas pero el usuario pregunta algo actual:
 → Responde con tu conocimiento general
